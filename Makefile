@@ -28,6 +28,7 @@ CXXFLAGS:= $(CFLAGS) -DHAVE_CONFIG_H
   
 #source file
 SOURCE  := $(wildcard *.c)
+SOURCE  := $(filter-out main.c, $(SOURCE))
 OBJS    := $(patsubst %.c, %.o, $(SOURCE))
   
 .PHONY : all objs clean rebuild
@@ -37,7 +38,7 @@ all : $(TARGET) $(TEST)
 objs : $(OBJS)
 
 %.o : %.c
-	$(CC) -c $< $(CFLAGS)
+	$(CC) $(CFLAGS) -c $<
   
 rebuild: clean all
                 
@@ -48,5 +49,5 @@ clean :
 $(TARGET) : $(OBJS)
 	$(AR) rsv $@ $(OBJS)
 
-$(TEST) : $(TARGET)
-	$(CC) -o $@ $? $(LDFLAGS) 
+$(TEST) : main.o $(TARGET)
+	$(CC) $(LDFLAGS) -o $@ $^
