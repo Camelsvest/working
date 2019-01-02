@@ -1,18 +1,16 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include "bus_event.h"
 
-
-bus_event_t* create_bus_event(int32_t id, const char *desc, event_callback_t callback, void *data)
+static int32_t bus_event_init(bus_event_t *event, int32_t id, const char *desc, void *data)
 {
-    bus_event_t *event;
-    size_t length;
-
-    event = (bus_event_t *)malloc(sizeof(bus_event_t));
+    size_t length;    
+    int32_t ret = -1;
+    
     if (event != NULL)
     {
         event->id = id;
-        event->callback = callback;
         event->data = data;
         
         if (desc != NULL)
@@ -34,6 +32,50 @@ bus_event_t* create_bus_event(int32_t id, const char *desc, event_callback_t cal
         }
         else
             event->desc = NULL;
+
+        ret = 0;
+    }
+
+    return ret;
+}
+
+static void bus_event_uninit(bus_event_t *event)
+{
+    if (event != NULL && event->desc != NULL)
+    {
+        free(event->desc);
+    }
+
+    return;
+}
+
+static void bus_event_callback(bus_event_t *event, void *data)
+{
+    assert(0);  // you must overload this function
+}
+
+static bus_event_vtable_t bus_event_vfuncs = 
+{
+    .uninit_func    = bus_event_uninit,
+    .callback       = bus_event_callback
+};
+
+bus_event_t* create_bus_event(int32_t id, const char *desc, void *data)
+{
+    bus_event_t *event;
+
+
+    event = (bus_event_t *)malloc(sizeof(bus_event_t));
+    if (event != NULL)
+    {
+        event->init_func = bus_event_init;
+        event->_vptr = &bus_event_vfuncs;
+
+        if (event->init_func(event, id, desc, data) != 0)
+        {
+            free(event);
+            event = NULL;
+        }        
     }
 
     return event;
@@ -43,11 +85,9 @@ bus_event_t* create_bus_event(int32_t id, const char *desc, event_callback_t cal
 
 void destroy_bus_event(bus_event_t * event)
 {
-    if (event != NULL)
+    if ((event != NULL) && (event->_vptr != NULL))
     {
-        if (event->desc != NULL)
-            free(event->desc);
-
+        event->_vptr->uninit_func(event);
         free(event);
     }
 

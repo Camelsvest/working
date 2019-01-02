@@ -7,12 +7,11 @@
 #define LOCK_MODULE(module)     pthread_mutex_lock(&module->mutex)
 #define UNLOCK_MODULE(module)   pthread_mutex_unlock(&module->mutex)
 
-module_t* create_bus_module(int32_t id, const char *desc)
+static int32_t bus_module_init(module_t *module, int32_t id, const char *desc)
 {
-    module_t    *module;
-    size_t      length;
-
-    module = (module_t *)malloc(sizeof(module_t));
+    size_t      length;    
+    int32_t     ret = -1;
+    
     if (module != NULL)
     {
         module->id = id;
@@ -35,12 +34,14 @@ module_t* create_bus_module(int32_t id, const char *desc)
 
         INIT_LIST_HEAD(&module->event_list_head);
         pthread_mutex_init(&module->mutex, NULL);
+
+        ret = 0;
     }
 
-    return module;
+    return ret;    
 }
 
-void destroy_bus_module(module_t *module)
+static void bus_module_uninit(module_t *module)
 {
     struct list_head *pos, *next;
     bus_event_t *event;
@@ -58,11 +59,76 @@ void destroy_bus_module(module_t *module)
         }
 
         pthread_mutex_destroy(&module->mutex);
-        free(module);
     }
 }
 
-int32_t bus_module_dispatch_event(module_t *module, bus_event_t *event)
+
+static bus_module_vtable_t module_vtable =
+{
+    .uninit_func = bus_module_uninit
+};
+
+module_t* create_bus_module(int32_t id, const char *desc)
+{
+    module_t    *module;
+
+    module = (module_t *)malloc(sizeof(module_t));
+    if (module != NULL)
+    {
+        module->init_func   = bus_module_init;        
+        module->_vptr       = &module_vtable;
+        
+        if (module->init_func(module, id, desc) != 0)
+        {
+            free(module);
+            module = NULL;
+        }
+    }
+    
+    return module;
+}
+
+void destroy_bus_module(module_t *module)
+{
+    if (module != NULL && module->_vptr != NULL)
+    {
+        module->_vptr->uninit_func(module);
+        free(module);    
+    }
+}
+
+void set_bus_module_id(module_t *module, int32_t id)
+{
+    if (module != NULL)
+        module->id = id;
+}
+
+
+int32_t set_bus_module_desc(module_t *module, const char *desc)
+{    
+    size_t length;
+    int32_t ret = -1;
+
+    if (desc != NULL)
+    {
+        length = strlen(desc);
+        if (length > 0)
+        {
+            if (module->desc != NULL)
+                free(module->desc);
+
+            module->desc = (char *)malloc(length + 1);
+            strcpy(module->desc, desc);
+
+            ret = 0;
+        }       
+    }
+
+    return ret;    
+}
+
+
+int32_t bus_module_dispatch_event(module_t *module, bus_event_t *event, void *param)
 {
     int32_t             ret;
     bus_event_t         *target;
@@ -77,9 +143,9 @@ int32_t bus_module_dispatch_event(module_t *module, bus_event_t *event)
             target = list_entry(pos, struct _bus_event_t, list);
             if (event->id == target->id)
             {
-                if (target->callback != NULL)
+                if ((target->_vptr) != NULL && (target->_vptr->callback != NULL))
                 {
-                    target->callback(target, event->data);
+                    target->_vptr->callback(target, param);
                     ret = 0;
                 }
             }

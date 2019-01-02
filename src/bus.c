@@ -66,17 +66,16 @@ void destroy_bus(bus_t *bus)
     return;
 }
 
-int32_t bus_add_module(bus_t *bus, const char *desc)
+int32_t bus_attach_module(bus_t *bus, module_t *module)
 {
-    module_t *module = NULL;
 
     LOCK_BUS(bus);
 
     if (bus->module_array_size > (bus->module_index + 1))
     {
-        module = create_bus_module(bus->module_index++, desc);       
         if (module != NULL)
         {
+            set_bus_module_id(module, bus->module_index++);
             bus->module_array[module->id] = module;
         }
         else
@@ -86,15 +85,14 @@ int32_t bus_add_module(bus_t *bus, const char *desc)
     }
     UNLOCK_BUS(bus);
 
-    return (module != NULL) ? module->id : -1;
+    return (module != NULL) ? BUS_MODULE_ID(module) : -1;
 }
 
-int32_t bus_del_module(bus_t *bus, int32_t id)
+int32_t bus_detach_module2(bus_t *bus, int32_t id)
 {
     LOCK_BUS(bus);
     if (id <= bus->module_index) 
     {
-        destroy_bus_module(bus->module_array[id]);
         bus->module_array[id] = NULL;
     }
     else
@@ -104,10 +102,24 @@ int32_t bus_del_module(bus_t *bus, int32_t id)
     UNLOCK_BUS(bus);
 
     return 0;
-
 }
 
-int32_t bus_register_event(bus_t *bus, int32_t module_id, bus_event_t *event)
+int32_t bus_detach_module1(bus_t *bus, module_t *module)
+{
+    return bus_detach_module2(bus, BUS_MODULE_ID(module));
+}
+
+int32_t bus_register_event(bus_t *bus, module_t *module, bus_event_t *event)
+{
+    return bus_register_event2(bus, BUS_MODULE_ID(module), event);
+}
+
+int32_t bus_unregister_event(bus_t *bus, module_t *module, bus_event_t *event)
+{
+    return bus_unregister_event2(bus, BUS_MODULE_ID(module), event);
+}
+
+int32_t bus_register_event2(bus_t *bus, int32_t module_id, bus_event_t *event)
 {
     int32_t ret;
     module_t *module;
@@ -129,7 +141,7 @@ int32_t bus_register_event(bus_t *bus, int32_t module_id, bus_event_t *event)
     return ret;
 }
 
-int32_t bus_unregister_event(bus_t *bus, int32_t module_id, bus_event_t *event)
+int32_t bus_unregister_event2(bus_t *bus, int32_t module_id, bus_event_t *event)
 {
     int32_t ret;
     module_t *module;
@@ -187,7 +199,7 @@ static void* bus_thread_func(void *param)
                     module = bus->module_array[index];
                     if (module != NULL)
                     {
-                        bus_module_dispatch_event(module, node);
+                        bus_module_dispatch_event(module, node, 0);
                     }
                 }
             }

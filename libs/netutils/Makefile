@@ -19,7 +19,7 @@ LIBS    :=
 LDFLAGS := -pthread
 
 DEFINES := 
-INCLUDE := -I.
+INCLUDE := -I../../3rd-parties
 CFLAGS  := -g -Wall -Wno-pointer-to-int-cast -pthread $(DEFINES) $(INCLUDE)
 CXXFLAGS:= $(CFLAGS) -DHAVE_CONFIG_H
   
