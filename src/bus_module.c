@@ -127,7 +127,6 @@ int32_t set_bus_module_desc(module_t *module, const char *desc)
     return ret;    
 }
 
-
 int32_t bus_module_dispatch_event(module_t *module, bus_event_t *event, void *param)
 {
     int32_t             ret;
@@ -143,11 +142,7 @@ int32_t bus_module_dispatch_event(module_t *module, bus_event_t *event, void *pa
             target = list_entry(pos, struct _bus_event_t, list);
             if (event->id == target->id)
             {
-                if ((target->_vptr) != NULL && (target->_vptr->callback != NULL))
-                {
-                    target->_vptr->callback(target, param);
-                    ret = 0;
-                }
+                ret = activate_bus_event(event, param);
             }
         }
         UNLOCK_MODULE(module);

@@ -94,3 +94,16 @@ void destroy_bus_event(bus_event_t * event)
     return;
 }
 
+int32_t activate_bus_event(bus_event_t *event, void *data)
+{
+	int32_t ret = -1;
+	
+	if ((event != NULL) && (event->_vptr->callback != NULL))
+	{
+		event->_vptr->callback(event, data);
+		ret = 0;
+	}
+
+	return ret;
+}
+
