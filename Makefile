@@ -29,6 +29,9 @@ rebuild: clean all
 clean :
 	@rm -fr src/*.o
 	@rm -fr $(TARGET)
+	@make -C libs/logging clean
+	@make -C libs/utils clean
+	@make -C libs/netutils clean
 
 $(TARGET) : $(OBJS) $(LIBLOGGING) $(LIBUTILS) $(LIBNETUTILS)
 	$(AR) rsv $@ $(OBJS)
