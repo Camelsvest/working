@@ -1,7 +1,7 @@
 #include <assert.h>
-#include <stdlib.h>
 #include <string.h>
 #include "bus_event.h"
+#include "utils/zalloc.h"
 
 static int32_t bus_event_init(bus_event_t *event, int32_t id, const char *desc, void *data)
 {
@@ -18,7 +18,7 @@ static int32_t bus_event_init(bus_event_t *event, int32_t id, const char *desc, 
             length = strlen(desc);
             if (length > 0)
             {
-                event->desc = (char *)malloc(length + 1);
+                event->desc = (char *)zmalloc(length + 1);
                 if (event->desc != NULL)
                 {
                     strcpy(event->desc, desc);
@@ -65,7 +65,7 @@ bus_event_t* create_bus_event(int32_t id, const char *desc, void *data)
     bus_event_t *event;
 
 
-    event = (bus_event_t *)malloc(sizeof(bus_event_t));
+    event = (bus_event_t *)zmalloc(sizeof(bus_event_t));
     if (event != NULL)
     {
         event->init_func = bus_event_init;

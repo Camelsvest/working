@@ -1,11 +1,11 @@
 #include <assert.h>
 #include <pthread.h>
-#include <stdlib.h>
 #include <string.h>
 #include "bus.h"
 #include "bus_event.h"
 #include "bus_module.h"
 #include "linux-like-list/list.h"
+#include "utils/zalloc.h"
 
 #define LOCK_BUS(bus)       pthread_mutex_lock(&bus->mutex)
 #define UNLOCK_BUS(bus)     pthread_mutex_unlock(&bus->mutex)
@@ -30,7 +30,7 @@ bus_t* create_bus(uint32_t module_count)
 {
     bus_t *bus;
 
-    bus = (bus_t *)malloc(sizeof(bus_t));
+    bus = (bus_t *)zmalloc(sizeof(bus_t));
     if (bus != NULL)
     {
         pthread_mutex_init(&bus->mutex, NULL);

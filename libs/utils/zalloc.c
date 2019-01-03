@@ -183,9 +183,8 @@ void* _zmalloc(size_t size, char *filename, unsigned int line)
                         result = WaitForSingleObject(alloc_stat->mutex, INFINITE);
                         assert(result == WAIT_OBJECT_0);
                 #else
-                        //result = pthread_mutex_lock(alloc_stat->mutex);
-                        //assert(result == 0);
-                        zpthread_func(pthread_mutex_lock, alloc_stat->mutex, result);
+                        result = pthread_mutex_lock(alloc_stat->mutex);
+                        assert(result == 0);
                 #endif                        
                         
                         hash_insert(alloc_stat->hash_table, head);

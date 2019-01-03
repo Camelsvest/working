@@ -29,13 +29,6 @@
         #define _zfree(p)             free(p)
 #endif
 
-
-#define zpthread_func(func, object, error)            \
-{                                                       \
-        error = func(object);                           \
-        assert(error == 0);                             \
-}
-
 #ifdef __cplusplus
 extern "C" {
 #endif

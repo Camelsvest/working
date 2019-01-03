@@ -1,5 +1,5 @@
-#include <stdlib.h>
 #include "engine.h"
+#include "utils/zalloc.h"
 
 struct _engine_t {
   
@@ -13,7 +13,9 @@ engine_t* create_engine()
 {
     engine_t *engine;
 
-    engine = (engine_t *)malloc(sizeof(engine_t));
+	zalloc_init();
+	
+    engine = (engine_t *)zmalloc(sizeof(engine_t));
     return engine;
 }
 
@@ -21,6 +23,8 @@ void destroy_engine(engine_t *engine)
 {
     if (engine != NULL)
         free(engine);
+
+	zalloc_uninit();
 }
 
 

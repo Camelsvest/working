@@ -1,8 +1,8 @@
 #include <assert.h>
-#include <stdlib.h>
 #include <string.h>
 #include "bus_module.h"
 #include "bus_event.h"
+#include "utils/zalloc.h"
 
 #define LOCK_MODULE(module)     pthread_mutex_lock(&module->mutex)
 #define UNLOCK_MODULE(module)   pthread_mutex_unlock(&module->mutex)
@@ -20,7 +20,7 @@ static int32_t bus_module_init(module_t *module, int32_t id, const char *desc)
             length = strlen(desc);
             if (length > 0)
             {
-                module->desc = (char *)malloc(length + 1);
+                module->desc = (char *)zmalloc(length + 1);
                 if (module->desc != NULL)
                 {
                     strcpy(module->desc, desc);
@@ -72,7 +72,7 @@ module_t* create_bus_module(int32_t id, const char *desc)
 {
     module_t    *module;
 
-    module = (module_t *)malloc(sizeof(module_t));
+    module = (module_t *)zmalloc(sizeof(module_t));
     if (module != NULL)
     {
         module->init_func   = bus_module_init;        
@@ -117,7 +117,7 @@ int32_t set_bus_module_desc(module_t *module, const char *desc)
             if (module->desc != NULL)
                 free(module->desc);
 
-            module->desc = (char *)malloc(length + 1);
+            module->desc = (char *)zmalloc(length + 1);
             strcpy(module->desc, desc);
 
             ret = 0;
