@@ -44,28 +44,35 @@ static struct _app_vtable_t app_vtable = {
 	.uninit_func = app_uninit
 };
 
-int app_start()
+int start_app()
 {
 	int ret = -1;
 	
 	if (instance == NULL)
 	{
         logging_init(NULL);
-		zalloc_init();
-		instance = (app_t *)zmalloc(sizeof(app_t));
-		instance->init_func = app_init;
-		instance->_vptr = &app_vtable;
+		ret = zalloc_init();
+        if (ret == 0)
+        {
+    		instance = (app_t *)zmalloc(sizeof(app_t));
+    		instance->init_func = app_init;
+    		instance->_vptr = &app_vtable;
 
-		ret = instance->init_func(instance);
+    		ret = instance->init_func(instance);
+            if (ret == 0)
+                ret = start_engine(instance->engine);
+        }
 	}
 	
     return ret;
 }
 
-void app_stop()
+void stop_app()
 {
 	if (instance != NULL)
 	{
+        stop_engine(instance->engine);
+        
 		if (instance->_vptr != NULL && instance->_vptr->uninit_func != NULL)
 			instance->_vptr->uninit_func(instance);
 

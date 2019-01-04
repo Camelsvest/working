@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-int app_start();
-void app_stop();
+int start_app();
+void stop_app();
 
 #ifdef __cplusplus
 }

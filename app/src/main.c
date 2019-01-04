@@ -3,7 +3,7 @@
 
 int main(int argc, char *argv[])
 {
-    if (app_start() != 0)
+    if (start_app() != 0)
     {
         fprintf(stderr, "Failed to start app.\r\n");
         return -1;
@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
     fprintf(stdout, "press any key to quit.");
     getchar();
     
-    app_stop();
+    stop_app();
 
     fprintf(stdout, "\r\n");
     
