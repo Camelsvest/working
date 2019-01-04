@@ -7,40 +7,6 @@
 #define LOCK_MODULE(module)     pthread_mutex_lock(&module->mutex)
 #define UNLOCK_MODULE(module)   pthread_mutex_unlock(&module->mutex)
 
-static int32_t bus_module_init(bus_module_t *module, int32_t id, const char *desc)
-{
-    size_t      length;    
-    int32_t     ret = -1;
-    
-    if (module != NULL)
-    {
-        module->id = id;
-        if (desc != NULL)
-        {
-            length = strlen(desc);
-            if (length > 0)
-            {
-                module->desc = (char *)zmalloc(length + 1);
-                if (module->desc != NULL)
-                {
-                    strcpy(module->desc, desc);
-                }
-            }
-            else
-            {
-                module->desc = NULL;
-            }            
-        }
-
-        INIT_LIST_HEAD(&module->event_list_head);
-        pthread_mutex_init(&module->mutex, NULL);
-
-        ret = 0;
-    }
-
-    return ret;    
-}
-
 static void bus_module_uninit(bus_module_t *module)
 {
     struct list_head *pos, *next;
@@ -68,21 +34,63 @@ static bus_module_vtable_t module_vtable =
     .uninit_func = bus_module_uninit
 };
 
-bus_module_t* create_bus_module(int32_t id, const char *desc)
+static int32_t bus_module_init(bus_module_t *module, uint32_t id, const char *desc)
+{
+    size_t      length;    
+    int32_t     ret = -1;
+    
+    if (module != NULL)
+    {
+        module->_vptr       = &module_vtable;        
+        module->id = id;
+        if (desc != NULL)
+        {
+            length = strlen(desc);
+            if (length > 0)
+            {
+                module->desc = (char *)zmalloc(length + 1);
+                if (module->desc != NULL)
+                {
+                    strcpy(module->desc, desc);
+                }
+            }
+            else
+            {
+                module->desc = NULL;
+            }            
+        }
+
+        INIT_LIST_HEAD(&module->event_list_head);
+        pthread_mutex_init(&module->mutex, NULL);
+
+        ret = 0;
+    }
+
+    return ret;    
+}
+
+int32_t init_bus_module(bus_module_t *module, uint32_t id, const char *desc)
+{
+    int32_t ret = -1;
+    
+    if (module != NULL)
+    {
+        module->init_func   = bus_module_init;                
+        ret = module->init_func(module, id, desc);
+    }
+
+    return ret;
+}
+
+bus_module_t* create_bus_module(uint32_t id, const char *desc)
 {
     bus_module_t    *module;
 
     module = (bus_module_t *)zmalloc(sizeof(bus_module_t));
-    if (module != NULL)
+    if (init_bus_module(module, id, desc) != 0)
     {
-        module->init_func   = bus_module_init;        
-        module->_vptr       = &module_vtable;
-        
-        if (module->init_func(module, id, desc) != 0)
-        {
-            zfree(module);
-            module = NULL;
-        }
+        zfree(module);
+        module = NULL;
     }
     
     return module;
@@ -157,7 +165,7 @@ void bus_module_subscribe_event(bus_module_t *module, bus_event_t* event)
 {
 	if (module != NULL)
 	{
-            list_add(&event->list, &module->event_list_head);
+        list_add(&event->list, &module->event_list_head);
 	}
 }
 

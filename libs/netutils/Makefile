@@ -8,8 +8,8 @@
   
 #target you can change test to what you want
 #.......lib*.so
-TARGET  := libinetutils.a
-TEST	:= inetutil_test
+TARGET  := libnetutils.a
+TEST	:= netutil_test
 
 #compile and lib parameter
 #....

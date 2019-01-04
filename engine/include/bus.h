@@ -15,6 +15,8 @@ typedef struct _bus_t       bus_t;
 bus_t*      create_bus(uint32_t module_count);
 void        destroy_bus(bus_t *bus);
 
+int32_t    bus_alloc_module_id(bus_t *bus);
+
 int32_t     bus_attach_module(bus_t *bus, bus_module_t *module);
 int32_t     bus_detach_module(bus_t *bus, bus_module_t *module);
 

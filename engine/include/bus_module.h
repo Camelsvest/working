@@ -7,15 +7,10 @@
 
 #define BUS_MODULE_ID(module)   (module->id)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct _module_t bus_module_t;
-
+typedef struct _bus_module_t bus_module_t;
 typedef bus_event_t bus_event_list;
 
-typedef int32_t (*module_init_func_t)(bus_module_t *module, int32_t id, const char *desc);
+typedef int32_t (*module_init_func_t)(bus_module_t *module, uint32_t id, const char *desc);
 typedef void (*module_uninit_func_t)(bus_module_t *module);
 
 typedef struct _bus_module_vtable_t  bus_module_vtable_t;
@@ -23,8 +18,7 @@ struct _bus_module_vtable_t {
     module_uninit_func_t uninit_func;    
 };
 
-
-struct _module_t {
+struct _bus_module_t {
     struct list_head        list;
     int32_t                 id;
     char                    *desc;
@@ -37,7 +31,12 @@ struct _module_t {
     bus_module_vtable_t     *_vptr;
 };
 
-bus_module_t*   create_bus_module(int32_t id, const char *desc);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+bus_module_t*   create_bus_module(uint32_t id, const char *desc);
+int32_t     init_bus_module(bus_module_t *module, uint32_t id, const char *desc);
 void        destroy_bus_module(bus_module_t *module);
 
 void        set_bus_module_id(bus_module_t *module, int32_t id);

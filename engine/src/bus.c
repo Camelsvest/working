@@ -66,6 +66,19 @@ void destroy_bus(bus_t *bus)
     return;
 }
 
+int32_t bus_alloc_module_id(bus_t *bus)
+{
+    int32_t id = -1;
+    
+    if (bus != NULL && bus->module_index < bus->module_array_size)
+    {
+        id = bus->module_index;
+    }
+
+    return id;
+}
+
+
 int32_t bus_attach_module(bus_t *bus, bus_module_t *module)
 {
 

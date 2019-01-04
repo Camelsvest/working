@@ -8,7 +8,7 @@
   
 #target you can change test to what you want
 #.......lib*.so
-TARGET  := libutil.a
+TARGET  := libutils.a
 
 #compile and lib parameter
 #....

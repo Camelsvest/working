@@ -20,16 +20,22 @@ struct _engine_vtable_t {
 
 static int32_t engine_init(engine_t *engine)
 {	
+    int32_t id;
 	int32_t ret = -1;
+
 
 	if (engine != NULL)
 	{
 		engine->bus = create_bus(8);
 		if (engine->bus != NULL)
 		{
-			engine->netio = create_netio_module();
-			if (engine->netio != NULL)
-				ret = 0;
+            id = bus_alloc_module_id(engine->bus);
+            if (id != -1)   // INVALID_MODULE_ID
+            {
+    			engine->netio = create_netio_module(id, "NETIO");
+    			if (engine->netio != NULL)
+    				ret = 0;
+            }
 		}
 	}
 
@@ -74,7 +80,12 @@ engine_t* create_engine()
 void destroy_engine(engine_t *engine)
 {
     if (engine != NULL)
+    {
+        if (engine->_vptr != NULL && engine->_vptr->uninit_func != NULL)
+            engine->_vptr->uninit_func(engine);
+
         zfree(engine);
+    }
 }
 
 int32_t     subcribe_event(engine_t *engine, bus_module_t *module, bus_event_t *event);

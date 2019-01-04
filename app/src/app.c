@@ -1,6 +1,7 @@
 #include "app.h"
 #include "engine.h"
 #include "utils/zalloc.h"
+#include "logging/logging.h"
 
 typedef struct _app_t app_t;
 
@@ -49,6 +50,7 @@ int app_start()
 	
 	if (instance == NULL)
 	{
+        logging_init(NULL);
 		zalloc_init();
 		instance = (app_t *)zmalloc(sizeof(app_t));
 		instance->init_func = app_init;
@@ -71,5 +73,6 @@ void app_stop()
 		instance = NULL;
 
 		zalloc_uninit();
+        logging_uninit();
 	}
 }

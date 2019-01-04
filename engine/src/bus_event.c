@@ -3,6 +3,35 @@
 #include "bus_event.h"
 #include "utils/zalloc.h"
 
+static void bus_event_uninit(bus_event_t *event)
+{
+	if (event != NULL)
+	{
+		LOCK_EVENT(event);
+		
+		if (event->ref_count > 0)
+			event->ref_count--;
+		else if (event->desc != NULL)
+			zfree(event->desc);
+		
+		UNLOCK_EVENT(event);
+	}
+	
+
+    return;
+}
+
+static void bus_event_callback(bus_event_t *event, void *data)
+{
+    assert(0);  // you must overload this function
+}
+
+static bus_event_vtable_t bus_event_vfuncs = 
+{
+    .uninit_func    = bus_event_uninit,
+    .callback       = bus_event_callback
+};
+
 static int32_t bus_event_init(bus_event_t *event, int32_t id, const char *desc, void *data)
 {
     size_t length;    
@@ -13,6 +42,7 @@ static int32_t bus_event_init(bus_event_t *event, int32_t id, const char *desc, 
 		event->ref_count = 0;		
         event->id = id;
         event->data = data;
+        event->_vptr = &bus_event_vfuncs;
 
 		event->mutex = (pthread_mutex_t *)zmalloc(sizeof(pthread_mutex_t));
 		if (event->mutex != NULL)
@@ -48,34 +78,6 @@ static int32_t bus_event_init(bus_event_t *event, int32_t id, const char *desc, 
     return ret;
 }
 
-static void bus_event_uninit(bus_event_t *event)
-{
-	if (event != NULL)
-	{
-		LOCK_EVENT(event);
-		
-		if (event->ref_count > 0)
-			event->ref_count--;
-		else if (event->desc != NULL)
-			zfree(event->desc);
-		
-		UNLOCK_EVENT(event);
-	}
-	
-
-    return;
-}
-
-static void bus_event_callback(bus_event_t *event, void *data)
-{
-    assert(0);  // you must overload this function
-}
-
-static bus_event_vtable_t bus_event_vfuncs = 
-{
-    .uninit_func    = bus_event_uninit,
-    .callback       = bus_event_callback
-};
 
 bus_event_t* create_bus_event(int32_t id, const char *desc, void *data)
 {
@@ -86,7 +88,6 @@ bus_event_t* create_bus_event(int32_t id, const char *desc, void *data)
     if (event != NULL)
     {
         event->init_func = bus_event_init;
-        event->_vptr = &bus_event_vfuncs;
 
         if (event->init_func(event, id, desc, data) != 0)
         {
@@ -97,8 +98,6 @@ bus_event_t* create_bus_event(int32_t id, const char *desc, void *data)
 
     return event;
 }
-
-
 
 void destroy_bus_event(bus_event_t * event)
 {
