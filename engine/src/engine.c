@@ -88,8 +88,79 @@ void destroy_engine(engine_t *engine)
     }
 }
 
-int32_t     subcribe_event(engine_t *engine, bus_module_t *module, bus_event_t *event);
-int32_t     unsubscribe_event(engine_t *engine, bus_module_t *module, bus_event_t *event);
-int32_t		dispatch_event(engine_t *engine, bus_event_t *event);
+int32_t start_engine(engine_t *engine)
+{
+    int32_t ret = -1;
+    
+    if (engine != NULL)
+    {
+        if (is_bus_running(engine->bus) == FALSE)
+        {
+            ret = start_bus(engine->bus);
+            if (ret == 0)
+            {
+                ret = start_netio(engine->netio);
+                if (ret != 0)
+                    stop_bus(engine->bus);
+            }
+        }
+    }
+
+    return ret;
+}
+
+int32_t stop_engine(engine_t *engine)
+{
+    int32_t ret = -1;
+
+    if (engine != NULL)
+    {
+        if (is_bus_running(engine->bus) == TRUE)
+        {
+            stop_bus(engine->bus);
+            stop_netio(engine->netio);
+
+            ret = 0;
+        }
+    }
+
+    return ret;
+}
+
+int32_t subcribe_event(engine_t *engine, bus_module_t *module, bus_event_t *event)
+{
+    int32_t ret = -1;
+    
+    if (engine != NULL)
+    {
+        ret = bus_subscribe_event(engine->bus, module, event);
+    }
+    
+    return ret;
+}
+
+int32_t unsubscribe_event(engine_t *engine, bus_module_t *module, bus_event_t *event)
+{
+    int32_t ret = -1;
+
+    if (engine != NULL)
+    {
+        ret = bus_unsubscribe_event(engine->bus, module, event);
+    }
+
+    return ret;
+}
+
+int32_t	dispatch_event(engine_t *engine, bus_event_t *event, void *param)
+{
+    int32_t ret = -1;
+
+    if (engine != NULL)
+    {
+        ret = bus_dispatch_event(engine->bus, event, param);
+    }
+
+    return ret;
+}
 
 

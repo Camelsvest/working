@@ -4,32 +4,12 @@
 #include <pthread.h>
 #include <stdint.h>
 #include "bus_event.h"
+#include "def.h"
 
 #define BUS_MODULE_ID(module)   (module->id)
+#define LOCK_MODULE(module)     pthread_mutex_lock(&module->mutex)
+#define UNLOCK_MODULE(module)   pthread_mutex_unlock(&module->mutex)
 
-typedef struct _bus_module_t bus_module_t;
-typedef bus_event_t bus_event_list;
-
-typedef int32_t (*module_init_func_t)(bus_module_t *module, uint32_t id, const char *desc);
-typedef void (*module_uninit_func_t)(bus_module_t *module);
-
-typedef struct _bus_module_vtable_t  bus_module_vtable_t;
-struct _bus_module_vtable_t {
-    module_uninit_func_t uninit_func;    
-};
-
-struct _bus_module_t {
-    struct list_head        list;
-    int32_t                 id;
-    char                    *desc;
-
-    pthread_mutex_t         mutex;
-    struct list_head        event_list_head;
-
-    module_init_func_t      init_func;
-
-    bus_module_vtable_t     *_vptr;
-};
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +21,7 @@ void        destroy_bus_module(bus_module_t *module);
 
 void        set_bus_module_id(bus_module_t *module, int32_t id);
 int32_t     set_bus_module_desc(bus_module_t *module, const char *desc);
+int32_t     set_bus_module(bus_module_t *module, bus_t *bus);
 
 int32_t     bus_module_dispatch_event(bus_module_t *module, bus_event_t *event, void *param);
 void		bus_module_subscribe_event(bus_module_t *module, bus_event_t* event);

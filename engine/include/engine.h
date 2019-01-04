@@ -13,11 +13,14 @@ extern "C" {
 
 
 engine_t*	create_engine();
-void		destroy_engine(engine_t *engine);       
+void		destroy_engine(engine_t *engine);
+
+int32_t     start_engine(engine_t *engine);
+int32_t     stop_engine(engine_t *engine);
 
 int32_t     subcribe_event(engine_t *engine, bus_module_t *module, bus_event_t *event);
 int32_t     unsubscribe_event(engine_t *engine, bus_module_t *module, bus_event_t *event);
-int32_t		dispatch_event(engine_t *engine, bus_event_t *event);
+int32_t		dispatch_event(engine_t *engine, bus_event_t *event, void *param);
 
 
 #ifdef __cplusplus

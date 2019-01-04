@@ -4,9 +4,6 @@
 #include "bus_event.h"
 #include "utils/zalloc.h"
 
-#define LOCK_MODULE(module)     pthread_mutex_lock(&module->mutex)
-#define UNLOCK_MODULE(module)   pthread_mutex_unlock(&module->mutex)
-
 static void bus_module_uninit(bus_module_t *module)
 {
     struct list_head *pos, *next;
@@ -41,7 +38,8 @@ static int32_t bus_module_init(bus_module_t *module, uint32_t id, const char *de
     
     if (module != NULL)
     {
-        module->_vptr       = &module_vtable;        
+        module->bus     = NULL;
+        module->_vptr   = &module_vtable;        
         module->id = id;
         if (desc != NULL)
         {
@@ -134,6 +132,20 @@ int32_t set_bus_module_desc(bus_module_t *module, const char *desc)
 
     return ret;    
 }
+
+int32_t set_bus_module(bus_module_t *module, bus_t *bus)
+{
+    int32_t ret = -1;
+    
+    if (module != NULL)
+    {
+        module->bus = bus;
+        ret = 0;
+    }
+
+    return ret;
+}
+
 
 int32_t bus_module_dispatch_event(bus_module_t *module, bus_event_t *event, void *param)
 {

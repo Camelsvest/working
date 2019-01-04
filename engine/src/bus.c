@@ -2,29 +2,16 @@
 #include <pthread.h>
 #include <string.h>
 #include "bus.h"
-#include "bus_event.h"
-#include "bus_module.h"
 #include "linux-like-list/list.h"
 #include "utils/zalloc.h"
+#include "logging/logging.h"
 
 #define LOCK_BUS(bus)       pthread_mutex_lock(&bus->mutex)
 #define UNLOCK_BUS(bus)     pthread_mutex_unlock(&bus->mutex)
 
 #define MODULE_ARRAY_MINIMUM_SIZE   8
 
-struct _bus_t {
-    bus_module_t        **module_array;
-    uint32_t            module_array_size;
-    uint32_t            module_index;
-    
-    pthread_mutex_t     mutex;
-    pthread_cond_t      cond;
 
-    char                running;    // 0 -- false, 1 -- true
-    struct list_head    event_list_head;    // received event list
-
-    pthread_t           thread_id;
-};
 
 bus_t* create_bus(uint32_t module_count)
 {
@@ -88,7 +75,11 @@ int32_t bus_attach_module(bus_t *bus, bus_module_t *module)
     {
         if (module != NULL)
         {
+            LOCK_MODULE(module);
             set_bus_module_id(module, bus->module_index++);
+            set_bus_module(module, bus);
+            UNLOCK_MODULE(module);
+            
             bus->module_array[module->id] = module;
         }
         else
@@ -103,10 +94,17 @@ int32_t bus_attach_module(bus_t *bus, bus_module_t *module)
 
 static int32_t bus_detach_module2(bus_t *bus, int32_t id)
 {
+    bus_module_t *module;
+    
     LOCK_BUS(bus);
     if (id <= bus->module_index) 
     {
+        module = bus->module_array[id];
         bus->module_array[id] = NULL;
+        
+        LOCK_MODULE(module);
+        set_bus_module(module, NULL);
+        UNLOCK_MODULE(module);       
     }
     else
     {
@@ -196,6 +194,8 @@ static void* bus_thread_func(void *param)
     bus = (bus_t *)param;
     if (bus != NULL)
     {
+        logging_trace("Bus is starting...\r\n");
+        
         LOCK_BUS(bus);
         while(bus->running)
         {
@@ -217,6 +217,8 @@ static void* bus_thread_func(void *param)
             }
         } 
         UNLOCK_BUS(bus);
+
+        logging_trace("Bus is stopping...\r\n");
     }
 
     return 0;
@@ -257,27 +259,27 @@ int32_t	bus_dispatch_event(bus_t *bus, bus_event_t *event, void *param)
 	return bus_dispatch_module_event(bus, NULL, event, param);
 }
 
-int32_t bus_start(bus_t *bus)
+int32_t start_bus(bus_t *bus)
 {
     int32_t ret;
 
     ret = -1;
     if (bus != NULL) {
-        bus->running = 1;
+        bus->running = TRUE;
         ret = pthread_create(&bus->thread_id, NULL, bus_thread_func, bus);
     }
 
     return ret;
 }
 
-int32_t bus_stop(bus_t *bus)
+int32_t stop_bus(bus_t *bus)
 {
     int32_t ret = -1;
     
     if (bus != NULL)
     {
         LOCK_BUS(bus);
-        bus->running = 0;
+        bus->running = FALSE;
         UNLOCK_BUS(bus);
 
         pthread_cond_signal(&bus->cond);
@@ -287,6 +289,17 @@ int32_t bus_stop(bus_t *bus)
     return ret;
 }
 
+BOOL is_bus_running(bus_t *bus)
+{
+    BOOL is_running = FALSE;
+    
+    if (bus != NULL)
+    {
+        LOCK_BUS(bus);
+        is_running = bus->running;           
+        UNLOCK_BUS(bus);
+    }
 
-
+    return is_running;
+}
 
