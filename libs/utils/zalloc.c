@@ -58,28 +58,34 @@ typedef struct _alloc_statistic
 
 static alloc_stat_t     *alloc_stat = NULL;
 
-void _zalloc_init()
+int _zalloc_init()
 {
-        if (alloc_stat == NULL)
+    int ret = -1;
+    
+    if (alloc_stat == NULL)
+    {
+        alloc_stat = (alloc_stat_t *)malloc(sizeof(alloc_stat_t));
+        if (alloc_stat)
         {
-                alloc_stat = (alloc_stat_t *)malloc(sizeof(alloc_stat_t));
-                if (alloc_stat)
-                {
-                    #if defined(WIN32) || defined(_WIN32)                    
-                        alloc_stat->mutex = CreateMutex(NULL, FALSE, NULL);
-                    #else
-                        alloc_stat->mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-                        pthread_mutex_init(alloc_stat->mutex, NULL);
-                    #endif
+        #if defined(WIN32) || defined(_WIN32)                    
+            alloc_stat->mutex = CreateMutex(NULL, FALSE, NULL);
+        #else
+            alloc_stat->mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+            pthread_mutex_init(alloc_stat->mutex, NULL);
+        #endif
 
-                        alloc_stat->hash_table = hash_init();
-                        alloc_stat->total_allocated_bytes       = 0;
-                        alloc_stat->total_free_bytes            = 0;
-                        alloc_stat->maximum_memory_bytes        = 0;
-                        alloc_stat->total_allocated_times       = 0;
-                        alloc_stat->total_free_times            = 0;
-                }
+            alloc_stat->hash_table = hash_init();
+            alloc_stat->total_allocated_bytes       = 0;
+            alloc_stat->total_free_bytes            = 0;
+            alloc_stat->maximum_memory_bytes        = 0;
+            alloc_stat->total_allocated_times       = 0;
+            alloc_stat->total_free_times            = 0;
+
+            ret = 0;
         }
+    }
+
+    return ret;
 }
 
 void alloc_visit_func(unsigned int key, void *data)

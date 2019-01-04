@@ -15,8 +15,8 @@
 		#define zstrdup(p)			_zstrdup(p, __FILE__, __LINE__)
 
 #else
-        #define zalloc_init()
-        #define zalloc_uninit()
+        #define zalloc_init()       -1
+        #define zalloc_uninit()     -1
         #define zalloc_show_statistics()
         #define zmalloc(size)		malloc(size)
         #define zcalloc(a, b)       calloc(a, b)
@@ -33,7 +33,7 @@
 extern "C" {
 #endif
 
-void    _zalloc_init();
+int     _zalloc_init();
 void    _zalloc_uninit();
 
 void*   _zmalloc(size_t size, char *filename, unsigned int line);
