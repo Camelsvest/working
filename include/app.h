@@ -1,12 +1,12 @@
-#ifndef _DEVICE_H_
-#define _DEVICE_H_
+#ifndef _APP_H_
+#define _APP_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int device_start();
-void device_stop();
+int app_start();
+void app_stop();
 
 #ifdef __cplusplus
 }

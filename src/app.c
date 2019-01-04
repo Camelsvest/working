@@ -1,11 +1,11 @@
-#include "device.h"
+#include "app.h"
 #include "engine.h"
 
-int device_start()
+int app_start()
 {
     return 0;
 }
 
-void device_stop()
+void app_stop()
 {
 }
