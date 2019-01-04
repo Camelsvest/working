@@ -49,6 +49,7 @@ int app_start()
 	
 	if (instance == NULL)
 	{
+		zalloc_init();
 		instance = (app_t *)zmalloc(sizeof(app_t));
 		instance->init_func = app_init;
 		instance->_vptr = &app_vtable;
@@ -65,5 +66,10 @@ void app_stop()
 	{
 		if (instance->_vptr != NULL && instance->_vptr->uninit_func != NULL)
 			instance->_vptr->uninit_func(instance);
+
+		zfree(instance);
+		instance = NULL;
+
+		zalloc_uninit();
 	}
 }
