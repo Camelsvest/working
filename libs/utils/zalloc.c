@@ -106,328 +106,313 @@ void _zalloc_show_statistics()
 
 void _zalloc_uninit()
 {
-        if (alloc_stat == NULL)
-            return;
+    if (alloc_stat == NULL)
+        return;
 
-        if (hash_amount(alloc_stat->hash_table) > 0)
-        {
-            logging_error("There are still following memblocks weren't free!\r\n");
+    if (hash_amount(alloc_stat->hash_table) > 0)
+    {
+        logging_error("There are still following memblocks weren't free!\r\n");
 
-            hash_foreach(alloc_stat->hash_table, alloc_visit_func, NULL);
-            hash_uninit(alloc_stat->hash_table);
-        }
+        hash_foreach(alloc_stat->hash_table, alloc_visit_func, NULL);
+        hash_uninit(alloc_stat->hash_table);
+    }
 
-		_zalloc_show_statistics();
+	_zalloc_show_statistics();
 
 #if defined(WIN32) || defined(_WIN32)
-        CloseHandle(alloc_stat->mutex);
+    CloseHandle(alloc_stat->mutex);
 #else
-        pthread_mutex_destroy(alloc_stat->mutex);
-        free(alloc_stat->mutex);
+    pthread_mutex_destroy(alloc_stat->mutex);
+    free(alloc_stat->mutex);
 #endif
-        free(alloc_stat);
+    free(alloc_stat);
 }
 
 void* _zmalloc(size_t size, char *filename, unsigned int line)
 {
-#if !defined(Z3_MEM_DEBUG) && !defined(_DEBUG) && !defined(DEBUG)
-        return malloc(size);
-#else
-        alloc_head_t    *head;
-        alloc_tail_t    *tail;
-        size_t          real_size, str_len;
-        unsigned int    bytes;
+    alloc_head_t    *head;
+    alloc_tail_t    *tail;
+    size_t          real_size, str_len;
+    unsigned int    bytes;
 
 #if defined(WIN32) || defined(_WIN32)
-        DWORD           result;
-#else
-		int		result;
-#endif
-
-        size = ALIGN(size, sizeof(void *));
-        real_size = size;
-        real_size += sizeof(alloc_head_t);
-        real_size += sizeof(alloc_tail_t);
-
-        head = (alloc_head_t *)malloc(real_size);
-        if (head)
-        {
-                head->magic     = MAGIC;
-                head->length    = size;
-                head->line      = line;
-
-                if (filename != NULL)
-                        str_len = strlen(filename);
-                else
-                        str_len = 0;
-
-                if (str_len > 0 && str_len < sizeof(head->filename))
-                {
-                        strcpy_s(head->filename, sizeof(head->filename), filename);
-                }
-                else if (str_len > 0)
-                {
-                        str_len = sizeof(head->filename) - 1;
-                        strncpy_s(head->filename, sizeof(head->filename), filename, str_len);
-                        head->filename[str_len - 1] = '\0';
-                }
-                else
-                        head->filename[0] = '\0';
-
-                tail = (alloc_tail_t *)((char *)(head+1) + size);
-                tail->magic = MAGIC;
-
-                if (alloc_stat != NULL)
-                {
-                #if defined(WIN32) || defined(_WIN32)
-                        result = WaitForSingleObject(alloc_stat->mutex, INFINITE);
-                        assert(result == WAIT_OBJECT_0);
-                #else
-                        result = pthread_mutex_lock(alloc_stat->mutex);
-                        assert(result == 0);
-                #endif                        
-                        
-                        hash_insert(alloc_stat->hash_table, head);
-                        
-                        alloc_stat->total_allocated_times++;
-                        alloc_stat->total_allocated_bytes += head->length;
-                        
-                        bytes = alloc_stat->total_allocated_bytes - alloc_stat->total_free_bytes;
-                        if (bytes > alloc_stat->maximum_memory_bytes)
-                                alloc_stat->maximum_memory_bytes = bytes;
-
-                #if defined(WIN32) || defined(_WIN32)
-                        ReleaseMutex(alloc_stat->mutex);
-                #else
-                        result = pthread_mutex_unlock(alloc_stat->mutex);
-						assert(result == 0);
-                #endif
-                }
-
-                return head + 1;
-        }
-
-        return NULL;
-#endif
-}
-
-void* _zcalloc(size_t num, size_t size, char *filename, unsigned int line)
-{
-#if !defined(Z3_MEM_DEBUG) && !defined(_DEBUG) && !defined(DEBUG)
-        return calloc(num, size);
-#else
-        alloc_head_t    *head;
-        alloc_tail_t    *tail;
-        size_t          real_size, str_len;
-        unsigned int    bytes;
-
-#if defined(WIN32) || defined(_WIN32)
-        DWORD           result;
+    DWORD           result;
 #else
 	int		result;
 #endif
 
-        size = ALIGN((num *size), sizeof(void *));
-        real_size = size;
-        real_size += sizeof(alloc_head_t);
-        real_size += sizeof(alloc_tail_t);
+    size = ALIGN(size, sizeof(void *));
+    real_size = size;
+    real_size += sizeof(alloc_head_t);
+    real_size += sizeof(alloc_tail_t);
 
-        head = (alloc_head_t *)calloc(real_size, 1);
-        if (head)
-        {
-                head->magic     = MAGIC;
-                head->length    = size;
-                head->line      = line;
+    head = (alloc_head_t *)malloc(real_size);
+    if (head)
+    {
+            head->magic     = MAGIC;
+            head->length    = size;
+            head->line      = line;
 
-                if (filename != NULL)
-                        str_len = strlen(filename);
-                else
-                        str_len = 0;
+            if (filename != NULL)
+                str_len = strlen(filename);
+            else
+                str_len = 0;
 
-                if (str_len > 0 && str_len < sizeof(head->filename))
-                {
-                        strncpy_s(head->filename, sizeof(head->filename), filename, str_len);
-                }
-                else if (str_len > 0)
-                {
-                        str_len = sizeof(head->filename) - 1;
-                        strncpy_s(head->filename, sizeof(head->filename), filename, str_len);
-                        head->filename[str_len - 1] = '\0';
-                }
-                else
-                        head->filename[0] = '\0';
+            if (str_len > 0 && str_len < sizeof(head->filename))
+            {
+                    strcpy_s(head->filename, sizeof(head->filename), filename);
+            }
+            else if (str_len > 0)
+            {
+                    str_len = sizeof(head->filename) - 1;
+                    strncpy_s(head->filename, sizeof(head->filename), filename, str_len);
+                    head->filename[str_len - 1] = '\0';
+            }
+            else
+                    head->filename[0] = '\0';
 
-                tail = (alloc_tail_t *)((char *)(head+1) + size);
-                tail->magic = MAGIC;
+            tail = (alloc_tail_t *)((char *)(head+1) + size);
+            tail->magic = MAGIC;
 
-                if (alloc_stat != NULL)
-                {
-                    #if defined(WIN32) || defined(_WIN32)                    
-                        result = WaitForSingleObject(alloc_stat->mutex, INFINITE);
-                        assert(result == WAIT_OBJECT_0);
-                    #else
-                        result = pthread_mutex_lock(alloc_stat->mutex);
-                        assert(result == 0);
-                    #endif
+            if (alloc_stat != NULL)
+            {
+            #if defined(WIN32) || defined(_WIN32)
+                    result = WaitForSingleObject(alloc_stat->mutex, INFINITE);
+                    assert(result == WAIT_OBJECT_0);
+            #else
+                    result = pthread_mutex_lock(alloc_stat->mutex);
+                    assert(result == 0);
+            #endif                        
                     
-                        hash_insert(alloc_stat->hash_table, head);
+                    hash_insert(alloc_stat->hash_table, head);
+                    
+                    alloc_stat->total_allocated_times++;
+                    alloc_stat->total_allocated_bytes += head->length;
+                    
+                    bytes = alloc_stat->total_allocated_bytes - alloc_stat->total_free_bytes;
+                    if (bytes > alloc_stat->maximum_memory_bytes)
+                            alloc_stat->maximum_memory_bytes = bytes;
 
-                        alloc_stat->total_allocated_times++;
-                        alloc_stat->total_allocated_bytes += head->length;
-                        
-                        bytes = alloc_stat->total_allocated_bytes - alloc_stat->total_free_bytes;
-                        if (bytes > alloc_stat->maximum_memory_bytes)
-                                alloc_stat->maximum_memory_bytes = bytes;
+            #if defined(WIN32) || defined(_WIN32)
+                    ReleaseMutex(alloc_stat->mutex);
+            #else
+                    result = pthread_mutex_unlock(alloc_stat->mutex);
+					assert(result == 0);
+            #endif
+            }
 
-                    #if defined(WIN32) || defined(_WIN32)     
-                        ReleaseMutex(alloc_stat->mutex);
-                    #else
-                        result = pthread_mutex_unlock(alloc_stat->mutex);
-                        assert(result == 0);
-                    #endif
-                }
+            return head + 1;
+    }
 
-                return head + 1;
-        }
-
-        return NULL;
-#endif
+    return NULL;
 }
+
+
+void* _zcalloc(size_t num, size_t size, char *filename, unsigned int line)
+{
+    alloc_head_t    *head;
+    alloc_tail_t    *tail;
+    size_t          real_size, str_len;
+    unsigned int    bytes;
+
+#if defined(WIN32) || defined(_WIN32)
+    DWORD           result;
+#else
+int		result;
+#endif
+
+    size = ALIGN((num *size), sizeof(void *));
+    real_size = size;
+    real_size += sizeof(alloc_head_t);
+    real_size += sizeof(alloc_tail_t);
+
+    head = (alloc_head_t *)calloc(real_size, 1);
+    if (head)
+    {
+            head->magic     = MAGIC;
+            head->length    = size;
+            head->line      = line;
+
+            if (filename != NULL)
+                    str_len = strlen(filename);
+            else
+                    str_len = 0;
+
+            if (str_len > 0 && str_len < sizeof(head->filename))
+            {
+                    strncpy_s(head->filename, sizeof(head->filename), filename, str_len);
+            }
+            else if (str_len > 0)
+            {
+                    str_len = sizeof(head->filename) - 1;
+                    strncpy_s(head->filename, sizeof(head->filename), filename, str_len);
+                    head->filename[str_len - 1] = '\0';
+            }
+            else
+                    head->filename[0] = '\0';
+
+            tail = (alloc_tail_t *)((char *)(head+1) + size);
+            tail->magic = MAGIC;
+
+            if (alloc_stat != NULL)
+            {
+                #if defined(WIN32) || defined(_WIN32)                    
+                    result = WaitForSingleObject(alloc_stat->mutex, INFINITE);
+                    assert(result == WAIT_OBJECT_0);
+                #else
+                    result = pthread_mutex_lock(alloc_stat->mutex);
+                    assert(result == 0);
+                #endif
+                
+                    hash_insert(alloc_stat->hash_table, head);
+
+                    alloc_stat->total_allocated_times++;
+                    alloc_stat->total_allocated_bytes += head->length;
+                    
+                    bytes = alloc_stat->total_allocated_bytes - alloc_stat->total_free_bytes;
+                    if (bytes > alloc_stat->maximum_memory_bytes)
+                            alloc_stat->maximum_memory_bytes = bytes;
+
+                #if defined(WIN32) || defined(_WIN32)     
+                    ReleaseMutex(alloc_stat->mutex);
+                #else
+                    result = pthread_mutex_unlock(alloc_stat->mutex);
+                    assert(result == 0);
+                #endif
+            }
+
+            return head + 1;
+    }
+
+    return NULL;
+}
+
 
 void* _zrealloc(void *ptr, size_t size, char *filename, unsigned int line)
 {
-#if !defined(Z3_MEM_DEBUG) && !defined(_DEBUG) && !defined(DEBUG)
-        return realloc(ptr, size);
-#else
-        alloc_head_t *head;
-        alloc_tail_t *tail;
-        size_t str_len, real_size;
+    alloc_head_t *head;
+    alloc_tail_t *tail;
+    size_t str_len, real_size;
 	unsigned int bytes;
 
 #if defined(WIN32) || defined(_WIN32)
-        DWORD result;
+    DWORD result;
 #else
-        int result;
+    int result;
 #endif
+
 	if (ptr == NULL)
 	{
 		return _zmalloc(size, filename, line);
 	}
 
-        head = (alloc_head_t *)ptr;
-        head -= 1;
+    head = (alloc_head_t *)ptr;
+    head -= 1;
 
-        if (head->magic != MAGIC)
-                assert(FALSE);
+    if (head->magic != MAGIC)
+            assert(FALSE);
 
-        tail = (alloc_tail_t *)((char *)ptr + head->length);
-        if (tail->magic != MAGIC)
-                assert(FALSE);
+    tail = (alloc_tail_t *)((char *)ptr + head->length);
+    if (tail->magic != MAGIC)
+            assert(FALSE);
 
-        if (alloc_stat != NULL)
-        {
-            #if defined(WIN32) || defined(_WIN32)                
-                result = WaitForSingleObject(alloc_stat->mutex, INFINITE);
-                assert(result == WAIT_OBJECT_0);
-            #else
-                result = pthread_mutex_lock(alloc_stat->mutex);
-                assert(result == 0);        
-            #endif               
-            
-                hash_remove(alloc_stat->hash_table, head);
-                alloc_stat->total_free_bytes += head->length;
-                alloc_stat->total_free_times++;
+    if (alloc_stat != NULL)
+    {
+        #if defined(WIN32) || defined(_WIN32)                
+            result = WaitForSingleObject(alloc_stat->mutex, INFINITE);
+            assert(result == WAIT_OBJECT_0);
+        #else
+            result = pthread_mutex_lock(alloc_stat->mutex);
+            assert(result == 0);        
+        #endif               
+        
+            hash_remove(alloc_stat->hash_table, head);
+            alloc_stat->total_free_bytes += head->length;
+            alloc_stat->total_free_times++;
 
-            #if defined(WIN32) || defined(_WIN32)  
-                ReleaseMutex(alloc_stat->mutex);
-            #else
-                //result = pthread_mutex_unlock(alloc_stat->mutex);
-                //assert(result == 0);
-                zpthread_func(pthread_mutex_unlock, alloc_stat->mutex, result);
-            #endif            
-        }
+        #if defined(WIN32) || defined(_WIN32)  
+            ReleaseMutex(alloc_stat->mutex);
+        #else
+            result = pthread_mutex_unlock(alloc_stat->mutex);
+            assert(result == 0);            
+        #endif            
+    }
 
-        size = ALIGN(size, sizeof(void *));
-        real_size = size;
-        real_size += sizeof(alloc_head_t);
-        real_size += sizeof(alloc_tail_t);
+    size = ALIGN(size, sizeof(void *));
+    real_size = size;
+    real_size += sizeof(alloc_head_t);
+    real_size += sizeof(alloc_tail_t);
 
-        head = (alloc_head_t *)realloc(head, real_size);
-        if (head)
-        {
-                assert(head->magic == MAGIC);
+    head = (alloc_head_t *)realloc(head, real_size);
+    if (head)
+    {
+            assert(head->magic == MAGIC);
 
-                head->length    = size;
-                head->line      = line;
+            head->length    = size;
+            head->line      = line;
 
-                if (filename != NULL)
-                        str_len = strlen(filename);
-                else
-                        str_len = 0;
+            if (filename != NULL)
+                    str_len = strlen(filename);
+            else
+                    str_len = 0;
 
-                if (str_len > 0 && str_len < sizeof(head->filename))
-                {
-                        strncpy_s(head->filename, sizeof(head->filename), filename, str_len);
-                }
-                else if (str_len > 0)
-                {
-                        str_len = sizeof(head->filename) - 1;
-                        strncpy_s(head->filename, sizeof(head->filename), filename, str_len);
-                        head->filename[str_len - 1] = '\0';
-                }
-                else
-                        head->filename[0] = '\0';
+            if (str_len > 0 && str_len < sizeof(head->filename))
+            {
+                    strncpy_s(head->filename, sizeof(head->filename), filename, str_len);
+            }
+            else if (str_len > 0)
+            {
+                    str_len = sizeof(head->filename) - 1;
+                    strncpy_s(head->filename, sizeof(head->filename), filename, str_len);
+                    head->filename[str_len - 1] = '\0';
+            }
+            else
+                    head->filename[0] = '\0';
 
-                tail = (alloc_tail_t *)((char *)(head+1) + size);
-                tail->magic = MAGIC;
+            tail = (alloc_tail_t *)((char *)(head+1) + size);
+            tail->magic = MAGIC;
 
-                if (alloc_stat != NULL)
-                {
-                    #if defined(WIN32) || defined(_WIN32)                    
-                        result = WaitForSingleObject(alloc_stat->mutex, INFINITE);
-                        assert(result == WAIT_OBJECT_0);
-                    #else
-                        //result = pthread_mutex_lock(alloc_stat->mutex);
-                        //assert(result == 0);
-                        zpthread_func(pthread_mutex_lock, alloc_stat->mutex, result);
-                    #endif
-			
-                        hash_insert(alloc_stat->hash_table, head);
+            if (alloc_stat != NULL)
+            {
+                #if defined(WIN32) || defined(_WIN32)                    
+                    result = WaitForSingleObject(alloc_stat->mutex, INFINITE);
+                    assert(result == WAIT_OBJECT_0);
+                #else
+                    result = pthread_mutex_lock(alloc_stat->mutex);
+                    assert(result == 0);
+                #endif
+		
+                    hash_insert(alloc_stat->hash_table, head);
 
-                        alloc_stat->total_allocated_times++;
-                        alloc_stat->total_allocated_bytes += head->length;
-                        
-                        bytes = alloc_stat->total_allocated_bytes - alloc_stat->total_free_bytes;
-                        if (bytes > alloc_stat->maximum_memory_bytes)
-                                alloc_stat->maximum_memory_bytes = bytes;
+                    alloc_stat->total_allocated_times++;
+                    alloc_stat->total_allocated_bytes += head->length;
+                    
+                    bytes = alloc_stat->total_allocated_bytes - alloc_stat->total_free_bytes;
+                    if (bytes > alloc_stat->maximum_memory_bytes)
+                            alloc_stat->maximum_memory_bytes = bytes;
 
-                    #if defined(WIN32) || defined(_WIN32)     
-                        ReleaseMutex(alloc_stat->mutex);
-                    #else
-                        result = pthread_mutex_unlock(alloc_stat->mutex);
-                        assert(result == 0);
-                    #endif
-                }
+                #if defined(WIN32) || defined(_WIN32)     
+                    ReleaseMutex(alloc_stat->mutex);
+                #else
+                    result = pthread_mutex_unlock(alloc_stat->mutex);
+                    assert(result == 0);
+                #endif
+            }
 
-                return head + 1;
-        }
+            return head + 1;
+    }
 
-        return NULL;        
-
-#endif
+    return NULL;        
 }
 
 
 void _zfree(void *memblock)
 {
-#if !defined(ZALLOC_DEBUG) && !defined(_DEBUG) && !defined(DEBUG)
-        free(memblock);
-#else
-        alloc_head_t *head;
-        alloc_tail_t *tail;
+    alloc_head_t *head;
+    alloc_tail_t *tail;
 
 #if defined(WIN32) || defined(_WIN32)
-        DWORD result;
+    DWORD result;
 #else
 	int result;
 #endif
@@ -435,42 +420,41 @@ void _zfree(void *memblock)
 	if (memblock == NULL)
 		return;
 
-        head = (alloc_head_t *)memblock;
-        head -= 1;
+    head = (alloc_head_t *)memblock;
+    head -= 1;
 
-        if (head->magic != MAGIC)
-                assert(FALSE);
+    if (head->magic != MAGIC)
+            assert(FALSE);
 
-        tail = (alloc_tail_t *)((char *)memblock + head->length);
-        if (tail->magic != MAGIC)
-                assert(FALSE);
+    tail = (alloc_tail_t *)((char *)memblock + head->length);
+    if (tail->magic != MAGIC)
+            assert(FALSE);
 
-        if (alloc_stat != NULL)
-        {
-            #if defined(WIN32) || defined(_WIN32)                
-                result = WaitForSingleObject(alloc_stat->mutex, INFINITE);
-                assert(result == WAIT_OBJECT_0);
-            #else
-                //result = pthread_mutex_lock(alloc_stat->mutex);
-                //assert(result == 0);
-                zpthread_func(pthread_mutex_lock, alloc_stat->mutex, result);
-            #endif               
-            
-                hash_remove(alloc_stat->hash_table, head);
+    if (alloc_stat != NULL)
+    {
+        #if defined(WIN32) || defined(_WIN32)                
+            result = WaitForSingleObject(alloc_stat->mutex, INFINITE);
+            assert(result == WAIT_OBJECT_0);
+        #else
+            result = pthread_mutex_lock(alloc_stat->mutex);
+            assert(result == 0);
+        #endif               
+        
+            hash_remove(alloc_stat->hash_table, head);
 
-                alloc_stat->total_free_bytes += head->length;
-                alloc_stat->total_free_times++;
+            alloc_stat->total_free_bytes += head->length;
+            alloc_stat->total_free_times++;
 
-            #if defined(WIN32) || defined(_WIN32)  
-                ReleaseMutex(alloc_stat->mutex);
-            #else
-                result = pthread_mutex_unlock(alloc_stat->mutex);
-                assert(result == 0);
-            #endif            
-        }
+        #if defined(WIN32) || defined(_WIN32)  
+            ReleaseMutex(alloc_stat->mutex);
+        #else
+            result = pthread_mutex_unlock(alloc_stat->mutex);
+            assert(result == 0);
+        #endif            
+    }
 
-        free(head);
-#endif
+    free(head);
+
 }
 
 char * _zstrdup(const char *s, char *filename, unsigned int line)

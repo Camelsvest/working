@@ -17,7 +17,7 @@ AR	:= ar
 LIBS    :=
 LDFLAGS := -pthread
 
-DEFINES := 
+DEFINES := -DZALLOC_DEBUG 
 INCLUDE := -I../../3rd-parties/ -I../
 CFLAGS  := -g -Wall -Wno-pointer-to-int-cast -pthread $(DEFINES) $(INCLUDE)
 CXXFLAGS:= $(CFLAGS) -DHAVE_CONFIG_H
