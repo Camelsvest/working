@@ -8,8 +8,8 @@ AR		:= ar
 LIBS	:= 
 LDFLAGS	:= -pthread
 
-DEFINES	:=
-INCLUDE	:= -I./3rd-parties -I./include -I./libs
+DEFINES	:= -DZALLOC_DEBUG
+INCLUDE	:= -I../3rd-parties -I./include -I../libs
 CFLAGS	:= -g -Wall -pthread $(DEFINES) $(INCLUDE)
 
 SOURCE	:= $(wildcard ./src/*.c)
@@ -29,18 +29,18 @@ rebuild: clean all
 clean :
 	@rm -fr src/*.o
 	@rm -fr $(TARGET)
-	@make -C libs/logging clean
-	@make -C libs/utils clean
-	@make -C libs/netutils clean
+	@make -C ../libs/logging clean
+	@make -C ../libs/utils clean
+	@make -C ../libs/netutils clean
 
 $(TARGET) : $(OBJS) $(LIBLOGGING) $(LIBUTILS) $(LIBNETUTILS)
 	$(AR) rsv $@ $(OBJS)
 
 $(LIBLOGGING) :
-	@make -C libs/logging
+	@make -C ../libs/logging
 
 $(LIBUTILS) :
-	@make -C libs/utils
+	@make -C ../libs/utils
 
 $(LIBNETUTILS) :
-	@make -C libs/netutils
+	@make -C ../libs/netutils

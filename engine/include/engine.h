@@ -2,7 +2,8 @@
 #define _ENGINE_H
 
 #include <stdint.h>
-#include "bus_event.h"
+#include "bus.h"
+#include "netio_module.h"
 
 typedef struct _engine_t engine_t;
 
@@ -14,14 +15,9 @@ extern "C" {
 engine_t*	create_engine();
 void		destroy_engine(engine_t *engine);       
 
-int32_t     initiate(engine_t * engine);
-
-
-int32_t     register_event(engine_t *engine, bus_event_t *event);
-
-int32_t     unregister_event1(engine_t *engine, bus_event_t *event);
-int32_t     unregister_event2(engine_t *engine, int32_t event_id);
-
+int32_t     subcribe_event(engine_t *engine, bus_module_t *module, bus_event_t *event);
+int32_t     unsubscribe_event(engine_t *engine, bus_module_t *module, bus_event_t *event);
+int32_t		dispatch_event(engine_t *engine, bus_event_t *event);
 
 
 #ifdef __cplusplus
