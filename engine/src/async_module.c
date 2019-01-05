@@ -15,8 +15,8 @@ static void async_module_uninit(bus_module_t *module)
         // ...  to do here
         // 
 
-        if (async_module->_vptr->module_uninit_func != NULL)
-            async_module->_vptr->module_uninit_func(&async_module->base);
+        if (async_module->_vptr->base_uninit_func != NULL)
+            async_module->_vptr->base_uninit_func(&async_module->base);
     }
 }
 
@@ -39,7 +39,7 @@ static int32_t async_module_run(async_module_t *module)
 }
 
 static async_module_vtable_t async_module_vtable = {
-    .module_uninit_func = NULL,
+    .base_uninit_func = NULL,
     .uninit_func = async_module_uninit,
     .on_start_process_func = async_module_on_start,
     .run_func = async_module_run,
@@ -60,7 +60,7 @@ static int32_t async_module_init(async_module_t *module, uint32_t id, const char
             module->running = FALSE;
             module->thread_result = 0;
             module->_vptr = &async_module_vtable;
-            module->_vptr->module_uninit_func = module->base._vptr->uninit_func;
+            module->_vptr->base_uninit_func = module->base._vptr->uninit_func;
             
             // override
             module->base._vptr->uninit_func = async_module_uninit;

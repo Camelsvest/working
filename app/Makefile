@@ -11,7 +11,7 @@ LDFLAGS	:= -pthread
 LIBS	:= -L../engine -lengine -L../libs/utils -lutils -L../libs/netutils -lnetutils -L../libs/logging -llogging
 DEFINES	:= -DZALLOC_DEBUG
 INCLUDE	:= -I../3rd-parties -Iinclude -I../libs -I../engine/include
-CFLAGS	:= -g -Wall -pthread $(DEFINES) $(INCLUDE)
+CFLAGS	:= -g -O0 -Wall -pthread $(DEFINES) $(INCLUDE)
 
 SOURCE	:= $(wildcard src/*.c)
 OBJS	:= $(patsubst %.c, %.o, $(SOURCE))

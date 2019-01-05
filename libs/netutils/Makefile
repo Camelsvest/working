@@ -20,7 +20,7 @@ LDFLAGS := -pthread
 
 DEFINES := 
 INCLUDE := -I../../3rd-parties
-CFLAGS  := -g -Wall -Wno-pointer-to-int-cast -pthread $(DEFINES) $(INCLUDE)
+CFLAGS  := -g -O0 -Wall -Wno-pointer-to-int-cast -pthread $(DEFINES) $(INCLUDE)
 CXXFLAGS:= $(CFLAGS) -DHAVE_CONFIG_H
   
 #i think you should do anything here

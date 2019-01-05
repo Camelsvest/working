@@ -19,9 +19,6 @@ int32_t    bus_alloc_module_id(bus_t *bus);
 int32_t     bus_attach_module(bus_t *bus, bus_module_t *module);
 int32_t     bus_detach_module(bus_t *bus, bus_module_t *module);
 
-int32_t     bus_subscribe_event(bus_t *bus, bus_module_t *module, bus_event_t *event);
-int32_t     bus_unsubscribe_event(bus_t *bus, bus_module_t *module, bus_event_t *event);
-
 int32_t		bus_dispatch_event(bus_t *bus, bus_event_t *event, void *param);
 int32_t		bus_dispatch_module_event(bus_t *bus, bus_module_t *module, bus_event_t *event, void *param);
 

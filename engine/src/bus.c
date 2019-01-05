@@ -17,6 +17,8 @@ bus_t* create_bus(uint32_t module_count)
 {
     bus_t *bus;
 
+    ENTER_FUNCTION;
+    
     bus = (bus_t *)zmalloc(sizeof(bus_t));
     if (bus != NULL)
     {
@@ -35,12 +37,16 @@ bus_t* create_bus(uint32_t module_count)
         
         INIT_LIST_HEAD(&bus->event_list_head);
     }
-   
+
+    EXIT_FUNCTION;
+    
     return bus;
 }
 
 void destroy_bus(bus_t *bus)
 {
+    ENTER_FUNCTION;
+    
     if (bus != NULL)
     {
         pthread_cond_destroy(&bus->cond);
@@ -50,6 +56,8 @@ void destroy_bus(bus_t *bus)
         zfree(bus);
     }
 
+    EXIT_FUNCTION;
+    
     return;
 }
 
@@ -68,7 +76,10 @@ int32_t bus_alloc_module_id(bus_t *bus)
 
 int32_t bus_attach_module(bus_t *bus, bus_module_t *module)
 {
-
+    int32_t ret = -1;
+    
+    ENTER_FUNCTION;
+    
     LOCK_BUS(bus);
 
     if (bus->module_array_size > (bus->module_index + 1))
@@ -81,20 +92,23 @@ int32_t bus_attach_module(bus_t *bus, bus_module_t *module)
             UNLOCK_MODULE(module);
             
             bus->module_array[module->id] = module;
+
+            ret = 0;
         }
-        else
-        {
-            bus->module_index--;
-        }
-    }
+    }    
     UNLOCK_BUS(bus);
 
-    return (module != NULL) ? BUS_MODULE_ID(module) : -1;
+    EXIT_FUNCTION;
+
+    
+    return ret;
 }
 
 static int32_t bus_detach_module2(bus_t *bus, int32_t id)
 {
     bus_module_t *module;
+
+    ENTER_FUNCTION;
     
     LOCK_BUS(bus);
     if (id <= bus->module_index) 
@@ -112,75 +126,14 @@ static int32_t bus_detach_module2(bus_t *bus, int32_t id)
     }    
     UNLOCK_BUS(bus);
 
+    EXIT_FUNCTION;
+
     return 0;
 }
 
 int32_t bus_detach_module(bus_t *bus, bus_module_t *module)
 {
     return bus_detach_module2(bus, BUS_MODULE_ID(module));
-}
-
-static int32_t bus_subscribe_event2(bus_t *bus, int32_t module_id, bus_event_t *event)
-{
-    int32_t ret;
-    bus_module_t *module;
-
-    ret = -1;
-    LOCK_BUS(bus);
-    if ((bus != NULL) && (module_id <= bus->module_index))
-    {
-        module = bus->module_array[module_id];
-        if (module != NULL)
-        {
-			bus_module_subscribe_event(module, event);
-            ret = 0;
-        }
-    }
-    UNLOCK_BUS(bus);
-
-    return ret;
-}
-
-int32_t bus_subscribe_event(bus_t *bus, bus_module_t *module, bus_event_t *event)
-{
-    return bus_subscribe_event2(bus, BUS_MODULE_ID(module), event);
-}
-
-static int32_t bus_unsubscribe_event2(bus_t *bus, int32_t module_id, bus_event_t *event)
-{
-    int32_t ret;
-    bus_module_t *module;
-    bus_event_t *node;
-    struct list_head *pos, *next;
-
-    ret = -1;
-    LOCK_BUS(bus);
-    if ((bus != NULL) && (module_id <= bus->module_index))
-    {
-        module = bus->module_array[module_id];
-        if (module != NULL)
-        {
-            list_for_each_safe(pos, next, &module->event_list_head)
-            {
-                node = list_entry(pos, struct _bus_event_t, list);
-                if (node == event)
-                {
-                    list_del(&event->list);
-                    ret = 0;
-
-                    break;
-                }
-            }
-        }
-    }
-    UNLOCK_BUS(bus);
-    
-    return ret;
-}
-
-int32_t bus_unsubscribe_event(bus_t *bus, bus_module_t *module, bus_event_t *event)
-{
-    return bus_unsubscribe_event2(bus, BUS_MODULE_ID(module), event);
 }
 
 static void* bus_thread_func(void *param)
@@ -214,6 +167,8 @@ static void* bus_thread_func(void *param)
                         bus_module_dispatch_event(module, node, 0);
                     }
                 }
+
+                bus_event_release(node);
             }
         } 
         UNLOCK_BUS(bus);
@@ -227,27 +182,21 @@ static void* bus_thread_func(void *param)
 
 int32_t	bus_dispatch_module_event(bus_t *bus, bus_module_t *destination, bus_event_t *event, void *param)
 {
-	bus_module_t *module;
-	int32_t index, ret = -1;
+	int32_t ret = -1;
 
-	
-	LOCK_BUS(bus);
-
-    for (index = 0; index < bus->module_index; index++)
+    if (destination == NULL)
     {
-        module = bus->module_array[index];
-		if (destination == NULL)	// deliver event to each module
-		{
-			ret = bus_module_dispatch_event(module, event, 0);
-		}
-		else if (destination == module)
-		{
-			ret = bus_module_dispatch_event(module, event, param);
-			break;	// deliver ONLY ONCE
-		}
+        LOCK_BUS(bus);
+        list_add(&event->list, &bus->event_list_head);
+        bus_event_addref(event);        
+        UNLOCK_BUS(bus);
+
+        pthread_cond_signal(&bus->cond);
+
+        ret = 0;
     }
-	
-	UNLOCK_BUS(bus);
+    else
+        ret = bus_module_dispatch_event(destination, event, param);
 
 	return ret;
 
@@ -261,13 +210,16 @@ int32_t	bus_dispatch_event(bus_t *bus, bus_event_t *event, void *param)
 
 int32_t start_bus(bus_t *bus)
 {
-    int32_t ret;
+    int32_t ret = -1;
 
-    ret = -1;
+    ENTER_FUNCTION;    
+
     if (bus != NULL) {
         bus->running = TRUE;
         ret = pthread_create(&bus->thread_id, NULL, bus_thread_func, bus);
     }
+
+    EXIT_FUNCTION;
 
     return ret;
 }
@@ -275,6 +227,8 @@ int32_t start_bus(bus_t *bus)
 int32_t stop_bus(bus_t *bus)
 {
     int32_t ret = -1;
+
+    ENTER_FUNCTION;
     
     if (bus != NULL)
     {
@@ -285,6 +239,8 @@ int32_t stop_bus(bus_t *bus)
         pthread_cond_signal(&bus->cond);
         ret = 0;
     }
+
+    EXIT_FUNCTION;
 
     return ret;
 }

@@ -10,7 +10,7 @@ LDFLAGS	:= -pthread
 
 DEFINES	:= -DZALLOC_DEBUG
 INCLUDE	:= -I../3rd-parties -I./include -I../libs
-CFLAGS	:= -g -Wall -pthread $(DEFINES) $(INCLUDE)
+CFLAGS	:= -g -O0 -Wall -pthread $(DEFINES) $(INCLUDE)
 
 SOURCE	:= $(wildcard ./src/*.c)
 OBJS	:= $(patsubst %.c, %.o, $(SOURCE))

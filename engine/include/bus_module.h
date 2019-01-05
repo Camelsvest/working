@@ -24,8 +24,9 @@ int32_t     set_bus_module_desc(bus_module_t *module, const char *desc);
 int32_t     set_bus_module(bus_module_t *module, bus_t *bus);
 
 int32_t     bus_module_dispatch_event(bus_module_t *module, bus_event_t *event, void *param);
-void		bus_module_subscribe_event(bus_module_t *module, bus_event_t* event);
-    
+int32_t     bus_module_subscribe_event(bus_module_t *module, int32_t event_id);
+int32_t     bus_module_unsubscribe_event(bus_module_t *module, int32_t event_id);
+
 #ifdef __cplusplus
 }
 #endif

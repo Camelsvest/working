@@ -19,7 +19,7 @@ LDFLAGS := -pthread
 
 DEFINES := -DZALLOC_DEBUG 
 INCLUDE := -I../../3rd-parties/ -I../
-CFLAGS  := -g -Wall -Wno-pointer-to-int-cast -pthread $(DEFINES) $(INCLUDE)
+CFLAGS  := -g -O0 -Wall -Wno-pointer-to-int-cast -pthread $(DEFINES) $(INCLUDE)
 CXXFLAGS:= $(CFLAGS) -DHAVE_CONFIG_H
   
 #i think you should do anything here

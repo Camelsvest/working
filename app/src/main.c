@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    fprintf(stdout, "press any key to quit.");
+    fprintf(stdout, "press any key to quit.\r\n");
     getchar();
     
     stop_app();

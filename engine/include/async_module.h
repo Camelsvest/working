@@ -13,7 +13,7 @@ typedef void    (*async_module_on_end_process_func_t)(async_module_t *module);
 
 typedef struct _async_module_vtable_t async_module_vtable_t;
 struct _async_module_vtable_t {
-    module_uninit_func_t       module_uninit_func;
+    module_uninit_func_t       base_uninit_func;
     async_module_uninit_func_t uninit_func;
 
     async_module_on_start_process_func_t    on_start_process_func;
