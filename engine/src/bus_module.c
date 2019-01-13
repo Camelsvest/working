@@ -51,9 +51,10 @@ static int32_t bus_module_init(bus_module_t *module, uint32_t id, const char *de
         module->bus = NULL;       
         module->id = id;
 
-        module->_vptr = (bus_module_vtable_t *)zmalloc(sizeof(bus_module_vtable_t));
+        module->_vptr = (bus_module_vtable_t *)zmalloc(sizeof(bus_module_vtable_t));       
         module->_vptr->callback_func = bus_module_activate_event;
-        module->_vptr->uninit_func = bus_module_uninit;  
+        module->_vptr->uninit_func = bus_module_uninit;
+
         
         if (desc != NULL)
         {
@@ -91,7 +92,7 @@ int32_t init_bus_module(bus_module_t *module, uint32_t id, const char *desc)
     
     if (module != NULL)
     {
-        module->init_func   = bus_module_init;                
+        module->init_func   = bus_module_init;    
         ret = module->init_func(module, id, desc);
     }
 
@@ -174,7 +175,7 @@ int32_t set_bus_module(bus_module_t *module, bus_t *bus)
     return ret;
 }
 
-int32_t bus_module_dispatch_event(bus_module_t *module, bus_event_t *event, void *param)
+int32_t bus_module_dispatch_event(bus_module_t *module, bus_event_t *event)
 {
     int32_t             ret;
     event_id_list_t     *source;
@@ -192,7 +193,7 @@ int32_t bus_module_dispatch_event(bus_module_t *module, bus_event_t *event, void
 				list_del(pos);	// removed dispatched event
 
                 if (module->_vptr->callback_func != NULL)
-                    ret = module->_vptr->callback_func(module, event, param);
+                    ret = module->_vptr->callback_func(module, event);
                 
 				zfree(source);
             }

@@ -69,7 +69,7 @@ static int32_t netio_run(async_module_t *module)
     netio_module_t *netio;
 
     netio = (netio_module_t *)module;
-
+    assert(netio != NULL);
 
 
     usleep(10000);

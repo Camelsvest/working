@@ -10,7 +10,7 @@
 extern "C" {
 #endif
 
-bus_event_t*    create_bus_event(int32_t id, const char *desc, void *data);
+bus_event_t*    create_bus_event(bus_module_t *sender, int32_t id, const char *desc, void *data);
 
 int32_t			bus_event_addref(bus_event_t *event);
 int32_t         bus_event_release(bus_event_t *event);

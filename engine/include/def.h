@@ -35,12 +35,12 @@ struct _event_id_list_t {
 
 typedef int32_t (*module_init_func_t)(bus_module_t *module, uint32_t id, const char *desc);
 typedef void (*module_uninit_func_t)(bus_module_t *module);
-typedef int32_t (*event_callback_func_t)(bus_module_t *module, bus_event_t *event, void *param);
+typedef int32_t (*event_callback_func_t)(bus_module_t *module, bus_event_t *event);
 
 typedef struct _bus_module_vtable_t  bus_module_vtable_t;
 struct _bus_module_vtable_t {
+    module_uninit_func_t uninit_func;
     event_callback_func_t callback_func;
-    module_uninit_func_t uninit_func;    
 };
 
 
@@ -72,7 +72,7 @@ struct _bus_t {
 };
 
 
-typedef int32_t (*event_init_func_t)(bus_event_t *event, int32_t id, const char *desc, void *data);
+typedef int32_t (*event_init_func_t)(bus_module_t *sender, bus_event_t *event, int32_t id, const char *desc, void *data);
 typedef void    (*event_uninit_func_t)(bus_event_t *event);
 
 typedef struct _bus_event_vtable_t  bus_event_vtable_t;
@@ -86,6 +86,10 @@ struct _bus_event_t {
     struct list_head    list;
     int32_t             id;
     void                *data;
+
+    uint32_t            seq_no;
+    bus_module_t        *from;
+    bus_module_t        *dest;  // NULL - Don's specify the destination, BUS need enumrate all modules to find out the receiver
     
     char                *desc;
 	int32_t				ref_count;

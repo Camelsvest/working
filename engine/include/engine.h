@@ -19,7 +19,7 @@ void		destroy_engine(engine_t *engine);
 int32_t     start_engine(engine_t *engine);
 int32_t     stop_engine(engine_t *engine);
 
-int32_t		dispatch_event(engine_t *engine, bus_event_t *event, void *param);
+int32_t		dispatch_event(engine_t *engine, bus_event_t *event);
 
 
 #ifdef __cplusplus

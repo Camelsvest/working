@@ -159,13 +159,20 @@ static void* bus_thread_func(void *param)
                 node = list_entry(pos, struct _bus_event_t, list);                
                 list_del(pos);
 
-                for (index = 0; index < bus->module_index; index++)
+                if (node->dest == NULL)
                 {
-                    module = bus->module_array[index];
-                    if (module != NULL)
+                    for (index = 0; index < bus->module_index; index++)
                     {
-                        bus_module_dispatch_event(module, node, 0);
+                            module = bus->module_array[index];
+                            if (module != NULL)
+                            {
+                                bus_module_dispatch_event(module, node);
+                            }
                     }
+                }
+                else
+                {
+                    bus_module_dispatch_event(node->dest, node);
                 }
 
                 bus_event_release(node);
@@ -180,12 +187,14 @@ static void* bus_thread_func(void *param)
 }
 
 
-int32_t	bus_dispatch_module_event(bus_t *bus, bus_module_t *destination, bus_event_t *event, void *param)
+int32_t	bus_dispatch_module_event(bus_t *bus, bus_module_t *destination, bus_event_t *event)
 {
 	int32_t ret = -1;
 
     if (destination == NULL)
     {
+        event->dest = destination;
+        
         LOCK_BUS(bus);
         list_add(&event->list, &bus->event_list_head);
         bus_event_addref(event);        
@@ -196,16 +205,16 @@ int32_t	bus_dispatch_module_event(bus_t *bus, bus_module_t *destination, bus_eve
         ret = 0;
     }
     else
-        ret = bus_module_dispatch_event(destination, event, param);
+        ret = bus_module_dispatch_event(destination, event);
 
 	return ret;
 
 }
 
 
-int32_t	bus_dispatch_event(bus_t *bus, bus_event_t *event, void *param)
+int32_t	bus_dispatch_event(bus_t *bus, bus_event_t *event)
 {
-	return bus_dispatch_module_event(bus, NULL, event, param);
+	return bus_dispatch_module_event(bus, NULL, event);
 }
 
 int32_t start_bus(bus_t *bus)

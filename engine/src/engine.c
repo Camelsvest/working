@@ -200,13 +200,13 @@ int32_t stop_engine(engine_t *engine)
     return ret;
 }
 
-int32_t	dispatch_event(engine_t *engine, bus_event_t *event, void *param)
+int32_t	dispatch_event(engine_t *engine, bus_event_t *event)
 {
     int32_t ret = -1;
 
     if (engine != NULL)
     {
-        ret = bus_dispatch_event(engine->bus, event, param);
+        ret = bus_dispatch_event(engine->bus, event);
     }
 
     return ret;
