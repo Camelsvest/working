@@ -21,8 +21,8 @@ all : $(TARGET)
 
 objs : $(OBJS)
 
-%o : %c
-	$(CC) $(CFLAGS) -c $<
+%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 rebuild: clean all
 
