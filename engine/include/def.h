@@ -39,10 +39,9 @@ typedef int32_t (*event_callback_func_t)(bus_module_t *module, bus_event_t *even
 
 typedef struct _bus_module_vtable_t  bus_module_vtable_t;
 struct _bus_module_vtable_t {
-    module_uninit_func_t uninit_func;
-    event_callback_func_t callback_func;
+    module_uninit_func_t    uninit_func;
+    event_callback_func_t   callback_func;
 };
-
 
 struct _bus_module_t {
     int32_t                 id;

@@ -90,11 +90,20 @@ static void clock_add_timer(uv_async_t *handle)
     
 }
 
-static void init_async(clock_module_t *clock)
+static int32_t init_async(clock_module_t *clock)
 {
+    int32_t ret = -1;
+    
     assert(clock->loop != NULL);
 
-    uv_async_init(clock->loop, clock->async, clock_add_timer);
+    clock->async = (uv_async_t *)zmalloc(sizeof(uv_async_t));
+    if (clock->async != NULL)
+    {
+        uv_async_init(clock->loop, clock->async, clock_add_timer);
+        ret = 0;
+    }
+
+    return ret;
 }
 
 static void clock_on_start(async_module_t *module)
@@ -213,8 +222,11 @@ static int32_t clock_init(clock_module_t *clock, uint32_t id, const char *desc)
             clock->base._vptr->on_end_process_func = clock_on_stop;
 
             clock->loop = (uv_loop_t *)zmalloc(sizeof(uv_loop_t));
-            init_async(clock);
-            
+            uv_loop_init(clock->loop);
+            if (clock->loop != NULL)
+                ret = init_async(clock);
+            else
+                ret = -1;
         }
     }
 

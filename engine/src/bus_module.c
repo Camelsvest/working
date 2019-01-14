@@ -44,6 +44,7 @@ static int32_t bus_module_init(bus_module_t *module, uint32_t id, const char *de
     size_t      length;  
     int32_t     ret = -1;
 
+
     ENTER_FUNCTION;
     
     if (module != NULL)
@@ -54,7 +55,6 @@ static int32_t bus_module_init(bus_module_t *module, uint32_t id, const char *de
         module->_vptr = (bus_module_vtable_t *)zmalloc(sizeof(bus_module_vtable_t));       
         module->_vptr->callback_func = bus_module_activate_event;
         module->_vptr->uninit_func = bus_module_uninit;
-
         
         if (desc != NULL)
         {
