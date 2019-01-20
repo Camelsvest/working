@@ -32,8 +32,9 @@ static void bus_module_uninit(bus_module_t *module)
     EXIT_FUNCTION;
 }
 
-static int32_t bus_module_activate_event(bus_module_t *module, bus_event_t *event, void *param)
-{
+static int32_t bus_module_activate_event(bus_module_t *module, bus_event_t *event)
+{
+
     logging_error("You must override function %s in derived classes.\r\n", __FUNCTION__);
 
     return -1;
