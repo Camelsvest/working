@@ -163,6 +163,14 @@ int32_t set_bus_module_desc(bus_module_t *module, const char *desc)
     return ret;    
 }
 
+char * get_bus_module_desc(bus_module_t *module)
+{
+    if (module != NULL)
+        return module->desc;
+    else
+        return NULL;
+}
+
 int32_t set_bus_module(bus_module_t *module, bus_t *bus)
 {
     int32_t ret = -1;

@@ -21,6 +21,7 @@ void        destroy_bus_module(bus_module_t *module);
 
 void        set_bus_module_id(bus_module_t *module, int32_t id);
 int32_t     set_bus_module_desc(bus_module_t *module, const char *desc);
+char *      get_bus_module_desc(bus_module_t *module);
 int32_t     set_bus_module(bus_module_t *module, bus_t *bus);
 
 int32_t     bus_module_dispatch_event(bus_module_t *module, bus_event_t *event);
