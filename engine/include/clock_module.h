@@ -3,6 +3,12 @@
 
 #include "async_module.h"
 
+enum {
+    CLOCK_ADD_TIMER = 1001,
+    CLOCK_DEL_TIMER,
+    CLOCK_STOP
+};
+
 typedef struct _clock_module_t clock_module_t;
 
 #ifdef __cplusplus

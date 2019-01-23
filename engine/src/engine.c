@@ -23,7 +23,7 @@ struct _engine_vtable_t {
 static int32_t engine_init(engine_t *engine)
 {	
     int32_t netio_id, clock_id;
-	int32_t ret = 0;
+    int32_t ret = 0;
 
     ENTER_FUNCTION;
     

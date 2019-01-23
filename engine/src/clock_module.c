@@ -22,8 +22,17 @@ struct _clock_module_t {
     clock_vtable_t      *_vptr;
 
     uv_loop_t           *loop;
-    uv_async_t          *async;    
+    uv_async_t          *async;
 };
+
+typedef struct _clock_async_event_t clock_async_event_t;
+struct _clock_async_event_t {
+    uint32_t    event_id;
+    void        *args;
+};
+
+static void process_async_event(uv_async_t *handle);
+
 
 static void clock_activate_timer(clock_module_t *sender, bus_event_t *event)
 {
@@ -62,15 +71,13 @@ static void activate_timer(uv_timer_t *handle)
     clock_activate_timer((clock_module_t *)event->dest, event);
 }
 
-static void clock_add_timer(uv_async_t *handle)
+static void clock_add_timer(bus_event_t *event)
 {
-    bus_event_t *event;
     timer_param_t *timeout;
     uv_timer_t *timer;
 
-
-    event = (bus_event_t *)handle->data;
-
+    ENTER_FUNCTION;
+    
     if (event != NULL)
     {
         timeout = (timer_param_t *)event->data; 
@@ -85,10 +92,60 @@ static void clock_add_timer(uv_async_t *handle)
             uv_timer_start(timer, activate_timer, timeout->millseconds, timeout->repeat);
         }
     }
-    else
-        logging_error("Illegal parameter, handle->data cannot be NULL.\r\n");
-    
+
+    EXIT_FUNCTION;
 }
+
+static int32_t reinit_async(uv_loop_t *loop, uv_async_t *async)
+{
+    int32_t ret = -1;
+    
+    if (async != NULL)
+    {
+        uv_async_init(loop, async, process_async_event);
+        ret = 0;
+    }
+
+    return ret;
+}
+
+static void process_async_event(uv_async_t *handle)
+{
+    clock_async_event_t *aysnc_internal_event;
+    bus_event_t *event;
+    
+    ENTER_FUNCTION;
+
+    aysnc_internal_event = (clock_async_event_t *)handle->data;
+    switch(aysnc_internal_event->event_id)
+    {
+        case CLOCK_ADD_TIMER:
+            {
+                event = (bus_event_t *)aysnc_internal_event->args;
+                
+                if (event != NULL)
+                    clock_add_timer(event);
+                else
+                    logging_error("Illegal parameter, event cannot be NULL.\r\n");
+                
+                zfree(event);
+                reinit_async(((clock_module_t *)event->dest)->loop, handle);   // next time we continue to use it
+            }
+            break;
+            
+        case CLOCK_STOP:
+            uv_stop(handle->loop);
+            break;
+            
+        default:
+            break;
+    }
+
+    zfree(aysnc_internal_event);
+
+    EXIT_FUNCTION;
+}
+
 
 static int32_t init_async(clock_module_t *clock)
 {
@@ -99,7 +156,8 @@ static int32_t init_async(clock_module_t *clock)
     clock->async = (uv_async_t *)zmalloc(sizeof(uv_async_t));
     if (clock->async != NULL)
     {
-        uv_async_init(clock->loop, clock->async, clock_add_timer);
+        uv_async_init(clock->loop, clock->async, process_async_event);
+        
         ret = 0;
     }
 
@@ -121,10 +179,14 @@ static int32_t clock_run(async_module_t *module)
 {
     clock_module_t *clock;
 
+    ENTER_FUNCTION;
+    
     assert(module != NULL);
     clock = (clock_module_t *)module;
     uv_run(clock->loop, UV_RUN_DEFAULT);
-        
+
+    EXIT_FUNCTION;
+    
     return 0;
 } 
 
@@ -144,12 +206,15 @@ static void clock_uninit(bus_module_t *module)
     if (clock != NULL)
     {
         assert(clock->base.running == FALSE);
-        zfree(clock->async);
-        zfree(clock->loop);
-
     
         if (clock->_vptr->base_uninit_func != NULL)
             clock->_vptr->base_uninit_func(module);
+
+        zfree(clock->_vptr);
+        zfree(clock->async);
+
+        uv_loop_close(clock->loop);
+        zfree(clock->loop);        
     }
 
     EXIT_FUNCTION;   
@@ -158,6 +223,7 @@ static void clock_uninit(bus_module_t *module)
 static int32_t clock_activate_event(bus_module_t *module, bus_event_t *event)
 {
     clock_module_t *clock;
+    clock_async_event_t *async_event;
     BOOL module_matched = TRUE;
 
     ENTER_FUNCTION;
@@ -182,9 +248,17 @@ static int32_t clock_activate_event(bus_module_t *module, bus_event_t *event)
             switch (event->id)
             {
             case TIMER_SETUP_REQUEST:
-                clock->async->data = event;
-                uv_async_send(clock->async);            
-                logging_trace("Activate event: %s\r\n", str_event(event->id));
+                async_event = (clock_async_event_t *)zmalloc(sizeof(clock_async_event_t));
+                if (async_event != NULL)
+                {
+                    async_event->event_id = CLOCK_ADD_TIMER;
+                    async_event->args = event;                    
+
+                    clock->async->data = async_event;
+                    
+                    uv_async_send(clock->async);            
+                    logging_trace("Activate event: %s\r\n", str_event(event->id));
+                }
                 break;
             default:
                 logging_error("Activate illegal event: %s\r\n", str_event(event->id));
@@ -276,7 +350,26 @@ int32_t start_clock(clock_module_t *clock)
 
 int32_t stop_clock(clock_module_t *clock)
 {
-    return stop_async_module((async_module_t *)clock);
+    clock_async_event_t *event;
+    int32_t ret = -1;
+
+    ENTER_FUNCTION;
+    
+    event = (clock_async_event_t *)zmalloc(sizeof(clock_async_event_t));
+    if (event != NULL)
+    {
+        event->event_id = CLOCK_STOP;
+        event->args = NULL;
+        
+        clock->async->data = event;
+        uv_async_send(clock->async);
+    }
+
+    ret = stop_async_module((async_module_t *)clock);
+
+    EXIT_FUNCTION;
+
+    return ret;
 }
 
 

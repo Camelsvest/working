@@ -35,20 +35,17 @@ static void netio_module_uninit(bus_module_t *module)
         //
         assert(netio_module->base.running == FALSE);
 
+        assert(netio_module->_vptr != NULL);
         // destroy base class finally
         if (netio_module->_vptr->base_uninit_func != NULL)
             netio_module->_vptr->base_uninit_func(module);
-        
+
+        zfree(netio_module->_vptr);
     }
 
     EXIT_FUNCTION;
     
 }
-
-static netio_module_vtable_t netio_module_vtable = {
-    .base_uninit_func = NULL,
-    .uninit_func = netio_module_uninit
-};
 
 static void netio_on_start(async_module_t *module)
 {
@@ -89,9 +86,9 @@ static int32_t netio_module_init(netio_module_t *module, uint32_t id, const char
         ret = init_async_module(&module->base, id, desc);
         if (ret == 0)
         {
-            module->_vptr = &netio_module_vtable;
-            
+            module->_vptr = (netio_module_vtable_t *)zmalloc(sizeof(netio_module_vtable_t));
             module->_vptr->base_uninit_func = module->base._vptr->uninit_func;
+            module->_vptr->uninit_func = netio_module_uninit;            
 
             // override base class's function uninit, so permit to delete obeject from base classes
             module->base.base._vptr->uninit_func = netio_module_uninit;
@@ -154,7 +151,7 @@ void destroy_netio_module(netio_module_t *netio)
 
         if (netio->_vptr != NULL && netio->_vptr->uninit_func != NULL)
             netio->_vptr->uninit_func((bus_module_t *)netio);
-
+    
         zfree(netio);
     }
 

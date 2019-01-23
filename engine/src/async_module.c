@@ -10,6 +10,8 @@ static void async_module_uninit(bus_module_t *module)
 {
     async_module_t *async_module;
 
+    ENTER_FUNCTION;
+    
     if (module != NULL)
     {
         async_module = (async_module_t *)module;
@@ -19,7 +21,11 @@ static void async_module_uninit(bus_module_t *module)
 
         if (async_module->_vptr->base_uninit_func != NULL)
             async_module->_vptr->base_uninit_func(&async_module->base);
+
+        zfree(async_module->_vptr);
     }
+
+    EXIT_FUNCTION;
 }
 
 static void async_module_on_start(async_module_t *module)
@@ -40,17 +46,11 @@ static int32_t async_module_run(async_module_t *module)
     return -1;
 }
 
-static async_module_vtable_t async_module_vtable = {
-    .base_uninit_func = NULL,
-    .uninit_func = async_module_uninit,
-    .on_start_process_func = async_module_on_start,
-    .run_func = async_module_run,
-    .on_end_process_func = async_module_on_stop
-};
-
 static int32_t async_module_init(async_module_t *module, uint32_t id, const char *desc)
 {
     int32_t ret = -1;
+
+    ENTER_FUNCTION;
     
     if (module != NULL)
     {
@@ -61,14 +61,20 @@ static int32_t async_module_init(async_module_t *module, uint32_t id, const char
             module->thread_id = 0;
             module->running = FALSE;
             module->thread_result = 0;
-            module->_vptr = &async_module_vtable;
+            module->_vptr = (async_module_vtable_t *)zmalloc(sizeof(async_module_vtable_t));
             module->_vptr->base_uninit_func = module->base._vptr->uninit_func;
+            module->_vptr->uninit_func = async_module_uninit;
+
+            module->_vptr->on_start_process_func = async_module_on_start;
+            module->_vptr->run_func = async_module_run;
+            module->_vptr->on_end_process_func = async_module_on_stop;
             
             // override
             module->base._vptr->uninit_func = async_module_uninit;
         }
     }
 
+    EXIT_FUNCTION;
     return ret;
 }
 
@@ -76,12 +82,16 @@ int32_t init_async_module(async_module_t *module, uint32_t id, const char *desc)
 {
     int32_t ret = -1;
 
+    ENTER_FUNCTION;
+    
     if (module != NULL)
     {
         module->init_func = async_module_init;
         ret = module->init_func(module, id, desc);
     }
 
+    EXIT_FUNCTION;
+    
     return ret;
 }
 
@@ -90,6 +100,8 @@ async_module_t* create_async_module(uint32_t id, const char *desc)
     async_module_t *module;
     int32_t ret = -1;
 
+    ENTER_FUNCTION;
+    
     module = (async_module_t *)zmalloc(sizeof(async_module_t));
     if (module != NULL)
     {
@@ -101,22 +113,29 @@ async_module_t* create_async_module(uint32_t id, const char *desc)
         }
     }
 
+    EXIT_FUNCTION;
+    
     return module;
 }
 
 
 void destroy_async_module(async_module_t *module)
 {
+    ENTER_FUNCTION;
+    
     if (module != NULL)
     {
         // to do here....
         //
 
-        if (module->_vptr != NULL && module->_vptr->uninit_func != NULL)
+        assert(module->_vptr != NULL); 
+        if (module->_vptr->uninit_func != NULL)
             module->_vptr->uninit_func((bus_module_t *)module);
 
         zfree(module);
     }
+
+    EXIT_FUNCTION;
 }
 
 static void* async_process(void *data)
@@ -153,6 +172,8 @@ int32_t start_async_module(async_module_t *module)
 {
     int32_t ret = -1;
     BOOL is_running = FALSE;
+
+    ENTER_FUNCTION;
     
     if (module != NULL)
     {
@@ -166,6 +187,8 @@ int32_t start_async_module(async_module_t *module)
         }
     }
 
+    EXIT_FUNCTION;
+    
     return ret;
 }
 
@@ -173,6 +196,8 @@ int32_t stop_async_module(async_module_t *module)
 {
     int32_t ret = -1;
     BOOL is_running = FALSE;    
+
+    ENTER_FUNCTION;
     
     if (module != NULL)
     {
@@ -185,6 +210,8 @@ int32_t stop_async_module(async_module_t *module)
             ret = pthread_join(module->thread_id, NULL);
     }
 
+    EXIT_FUNCTION;
+    
     return ret;
 }
 
