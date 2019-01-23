@@ -118,7 +118,7 @@ static void clock_on_start(async_module_t *module)
 }
 
 static int32_t clock_run(async_module_t *module)
-{
+{
     clock_module_t *clock;
 
     assert(module != NULL);
@@ -135,14 +135,14 @@ static void clock_on_stop(async_module_t *module)
 }
 
 static void clock_uninit(bus_module_t *module)
-{
+{
     clock_module_t *clock;
 
     ENTER_FUNCTION;
     
     clock = (clock_module_t *)module;
     if (clock != NULL)
-    {
+    {
         assert(clock->base.running == FALSE);
         zfree(clock->async);
         zfree(clock->loop);
@@ -259,7 +259,7 @@ void destroy_clock(clock_module_t *clock)
     ENTER_FUNCTION;
 
     if (clock != NULL)
-    {
+    {
         if (clock->_vptr->uninit_func != NULL)
             clock->_vptr->uninit_func((bus_module_t *)clock);
 

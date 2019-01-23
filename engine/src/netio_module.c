@@ -51,7 +51,7 @@ static netio_module_vtable_t netio_module_vtable = {
 };
 
 static void netio_on_start(async_module_t *module)
-{
+{
     // ... to do here
     logging_trace("NetIO is staring ... \r\n");
     on_start_async_module(module);

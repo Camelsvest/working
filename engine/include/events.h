@@ -25,7 +25,7 @@ struct _timer_resp_t {
                             // at one time, it can be used to distingue which timer is activated                            
 
     int             error;  // < 0, failure reason; 0 - succeed;
-};
+};
 
 #ifdef __cplusplus
 extern "C" {

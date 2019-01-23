@@ -10,7 +10,7 @@
     #define FILENAME(x) (strrchr(x,'\\')?strrchr(x,'\\')+1:x)
 #else
     #define FILENAME(x) (strrchr(x,'/')?strrchr(x,'/')+1:x)
-#endif
+#endif
 
 #define __FILENAME__     (FILENAME(__FILE__))
 

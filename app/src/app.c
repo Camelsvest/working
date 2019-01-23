@@ -50,18 +50,18 @@ int start_app()
 	
 	if (instance == NULL)
 	{
-        logging_init(NULL);
+	        logging_init(NULL);
 		ret = zalloc_init();
-        if (ret == 0)
-        {
-    		instance = (app_t *)zmalloc(sizeof(app_t));
-    		instance->init_func = app_init;
-    		instance->_vptr = &app_vtable;
+                if (ret == 0)
+                {
+    		        instance = (app_t *)zmalloc(sizeof(app_t));
+             		instance->init_func = app_init;
+    	        	instance->_vptr = &app_vtable;
 
-    		ret = instance->init_func(instance);
-            if (ret == 0)
-                ret = start_engine(instance->engine);
-        }
+    		        ret = instance->init_func(instance);
+                        if (ret == 0)
+                                ret = start_engine(instance->engine);
+                }
 	}
 	
     return ret;

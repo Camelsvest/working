@@ -3,8 +3,8 @@ LIBLOGGING	:= libs/logging/liblogging.a
 LIBUTILS	:= libs/utils/libutils.a
 LIBNETUTILS	:= libs/netutils/libnetutils.a
 
-CC		:= gcc
-AR		:= ar
+CC	:= gcc
+AR	:= ar
 LIBS	:= 
 LDFLAGS	:= -pthread
 

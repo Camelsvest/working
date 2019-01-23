@@ -75,7 +75,7 @@ static void engine_uninit(engine_t *engine)
     ENTER_FUNCTION;
     
 	if (engine != NULL && engine->bus != NULL)
-	{
+	{
         if (engine->netio != NULL)
         {
             bus_detach_module(engine->bus, (bus_module_t *)engine->netio);
@@ -111,7 +111,7 @@ engine_t* create_engine()
     
     engine = (engine_t *)zmalloc(sizeof(engine_t));
 	if (engine != NULL)
-	{
+	{
 		engine->init_func = engine_init;
 		engine->_vptr = &engine_vtable;
 
