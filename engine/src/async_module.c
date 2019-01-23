@@ -1,5 +1,7 @@
 #include <assert.h>
 #include <pthread.h>
+#include <sys/prctl.h>
+
 #include "utils/zalloc.h"
 #include "async_module.h"
 #include "logging/logging.h"
@@ -188,6 +190,10 @@ int32_t stop_async_module(async_module_t *module)
 
 void on_start_async_module(async_module_t *module)
 {
+    const char *name = get_bus_module_desc((bus_module_t *)module);
+
+    prctl(PR_SET_NAME, name);
+    
     LOCK_MODULE((&module->base));
     module->running = TRUE;
     UNLOCK_MODULE((&module->base));    
