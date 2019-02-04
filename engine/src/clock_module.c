@@ -15,6 +15,12 @@ struct _clock_vtable_t {
     clock_uninit_func_t         uninit_func;
 };
 
+typedef struct _clock_timer_list_t clock_timer_list_t;
+typedef struct _clock_timer_list_t {
+    struct list_head    list;
+    uv_timer_t          *timer; 
+};
+
 struct _clock_module_t {
     async_module_t  base;
 
@@ -23,6 +29,8 @@ struct _clock_module_t {
 
     uv_loop_t           *loop;
     uv_async_t          *async;
+
+    clock_timer_list_t  timer_list;
 };
 
 typedef struct _clock_async_event_t clock_async_event_t;
@@ -30,6 +38,8 @@ struct _clock_async_event_t {
     uint32_t    event_id;
     void        *args;
 };
+
+
 
 static void process_async_event(uv_async_t *handle);
 
@@ -74,7 +84,8 @@ static void activate_timer(uv_timer_t *handle)
 static void clock_add_timer(bus_event_t *event)
 {
     timer_param_t *timeout;
-    uv_timer_t *timer;
+    clock_module_t *clock;
+    clock_timer_list_t *timer_node;
 
     ENTER_FUNCTION;
     
@@ -83,13 +94,19 @@ static void clock_add_timer(bus_event_t *event)
         timeout = (timer_param_t *)event->data; 
         assert(timeout != NULL);
         
-        timer = (uv_timer_t *)zmalloc(sizeof(uv_timer_t));
-        if (timer != NULL)
-        {
-            uv_timer_init(timer->loop, timer);
-            timer->data = event;
-            
-            uv_timer_start(timer, activate_timer, timeout->millseconds, timeout->repeat);
+        timer_node = (clock_timer_list_t *)zmalloc(sizeof(clock_timer_list_t));
+        if (timer_node != NULL)
+        {            
+            timer_node->timer = (uv_timer_t *)zmalloc(sizeof(uv_timer_t));
+            if (timer_node->timer != NULL)
+            {
+                clock = (clock_module_t *)event->dest;
+                assert(clock != NULL);
+                uv_timer_init(clock->loop, timer_node->timer);
+                timer_node->timer->data = event;
+
+                uv_timer_start(timer_node->timer, activate_timer, timeout->millseconds, timeout->repeat);
+            }
         }
     }
 
@@ -284,21 +301,28 @@ static int32_t clock_init(clock_module_t *clock, uint32_t id, const char *desc)
         if (ret == 0)
         {
             clock->_vptr = (clock_vtable_t *)zmalloc(sizeof(clock_vtable_t));
-            clock->_vptr->base_uninit_func = clock->base._vptr->uninit_func;
-            clock->_vptr->uninit_func = clock_uninit;
+            if (clock->_vptr) 
+            {
+                clock->_vptr->base_uninit_func = clock->base._vptr->uninit_func;
+                clock->_vptr->uninit_func = clock_uninit;
 
-            // override
-            clock->base.base._vptr->uninit_func = clock_uninit;
-            clock->base.base._vptr->callback_func = clock_activate_event;
-            
-            clock->base._vptr->on_start_process_func = clock_on_start;
-            clock->base._vptr->run_func = clock_run;
-            clock->base._vptr->on_end_process_func = clock_on_stop;
+                // override
+                clock->base.base._vptr->uninit_func = clock_uninit;
+                clock->base.base._vptr->callback_func = clock_activate_event;
+                
+                clock->base._vptr->on_start_process_func = clock_on_start;
+                clock->base._vptr->run_func = clock_run;
+                clock->base._vptr->on_end_process_func = clock_on_stop;
 
-            clock->loop = (uv_loop_t *)zmalloc(sizeof(uv_loop_t));
-            uv_loop_init(clock->loop);
-            if (clock->loop != NULL)
-                ret = init_async(clock);
+                INIT_LIST_HEAD(&clock->timer_list.list);
+                
+                clock->loop = (uv_loop_t *)zmalloc(sizeof(uv_loop_t));
+                uv_loop_init(clock->loop);
+                if (clock->loop != NULL)
+                    ret = init_async(clock);
+                else
+                    ret = -1;            
+            }
             else
                 ret = -1;
         }
