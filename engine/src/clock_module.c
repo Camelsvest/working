@@ -16,7 +16,7 @@ struct _clock_vtable_t {
 };
 
 typedef struct _clock_timer_list_t clock_timer_list_t;
-typedef struct _clock_timer_list_t {
+struct _clock_timer_list_t {
     struct list_head    list;
     uv_timer_t          *timer; 
 };
@@ -48,6 +48,7 @@ static void clock_activate_timer(clock_module_t *sender, bus_event_t *event)
 {
     bus_event_t *resp;
     timer_resp_t *timer_resp;
+
     
     resp = create_bus_event((bus_module_t *)sender, TIMER_SETUP_RESPONSE, "TIMER_SETUP_RESPONSE", NULL);
     if (resp != NULL)
@@ -74,11 +75,31 @@ static void clock_activate_timer(clock_module_t *sender, bus_event_t *event)
 static void activate_timer(uv_timer_t *handle)
 {
     bus_event_t *event;
+    clock_module_t *clock_module;
+    clock_timer_list_t *timer_node;
+    struct list_head *pos, *next;
 
     event = handle->data;
     assert(event->dest != NULL);
 
-    clock_activate_timer((clock_module_t *)event->dest, event);
+    clock_module = (clock_module_t *)event->data;
+    assert(clock_module != NULL);
+
+    clock_activate_timer(clock_module, event);
+
+    // delete timer from clock module list
+    list_for_each_safe(pos, next, &clock_module->timer_list.list)
+    {
+        timer_node = list_entry(pos, clock_timer_list_t, list);
+        if (timer_node->timer == handle)
+        {
+            list_del(&timer_node->list);
+
+            zfree(timer_node->timer);
+            zfree(timer_node);
+            break;
+        }
+    }    
 }
 
 static void clock_add_timer(bus_event_t *event)
@@ -104,6 +125,8 @@ static void clock_add_timer(bus_event_t *event)
                 assert(clock != NULL);
                 uv_timer_init(clock->loop, timer_node->timer);
                 timer_node->timer->data = event;
+
+                list_add(&timer_node->list, &clock->timer_list.list);
 
                 uv_timer_start(timer_node->timer, activate_timer, timeout->millseconds, timeout->repeat);
             }
