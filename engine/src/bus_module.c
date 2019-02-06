@@ -205,6 +205,8 @@ int32_t bus_module_dispatch_event(bus_module_t *module, bus_event_t *event)
                     ret = module->_vptr->callback_func(module, event);
                 
 				zfree(source);
+
+                break;  // we shouldn't own duplicated event ID in same module
             }
         }
         UNLOCK_MODULE(module);
