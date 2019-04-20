@@ -3,27 +3,25 @@
 
 #include <stdint.h>
 #include "bus.h"
+#include "clock_module.h"
 #include "netio_module.h"
 
+class Engine
+{
+public:
+    Engine();
+    virtual ~Engine();
 
-typedef struct _engine_t engine_t;
+    int32_t start();
+    void    stop();
+    bool    isRunning() { return m_Running; }
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+private:
+    Bus*            m_Bus;
+    ClockModule*    m_ClockModule;
+    NetIOModule*    m_NetIOModule;
 
-
-engine_t*	create_engine();
-void		destroy_engine(engine_t *engine);
-
-int32_t     start_engine(engine_t *engine);
-int32_t     stop_engine(engine_t *engine);
-
-int32_t		dispatch_event(engine_t *engine, bus_event_t *event);
-
-
-#ifdef __cplusplus
-}
-#endif
+    bool            m_Running;
+};
 
 #endif

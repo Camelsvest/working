@@ -5,16 +5,17 @@ LIBUTILS	:= libs/utils/libutils.a
 LIBNETUTILS	:= libs/netutils/libnetutils.a
 
 CC		:= gcc
+C++		:= g++
 AR		:= ar
 LIBS	:= 
 LDFLAGS	:= -pthread 
-LIBS	:= -L../engine -lengine -L../libs/utils -lutils -L../libs/netutils -lnetutils -L../libs/logging -llogging -luv
+LIBS	:= -L../engine -lengine -L../libs/logging -llogging -L../libs/utils -lutils -L../libs/netutils -lnetutils -luv
 DEFINES	:= -DZALLOC_DEBUG
 INCLUDE	:= -I../3rd-parties -Iinclude -I../libs -I../engine/include
-CFLAGS	:= -g -O0 -Wall -pthread $(DEFINES) $(INCLUDE)
+CPPFLAGS	:= -std=c++11 -g -O0 -Wall -pthread $(DEFINES) $(INCLUDE)
 
-SOURCE	:= $(wildcard src/*.c)
-OBJS	:= $(patsubst %.c, %.o, $(SOURCE))
+SOURCE	:= $(wildcard src/*.cpp)
+OBJS	:= $(patsubst %.cpp, %.o, $(SOURCE))
 
 .PHONY : all objs clean rebuild
 
@@ -22,8 +23,8 @@ all : $(TARGET)
 
 objs : $(OBJS)
 
-%o : %c
-	$(CC) $(CFLAGS) -c $<
+%o : %cpp
+	$(C++) $(CPPFLAGS) -c $<
 
 rebuild: clean all
 
@@ -36,7 +37,7 @@ clean :
 	@make -C ../libs/netutils clean
 
 $(TARGET) : $(OBJS) $(LIBENGINE) $(LIBLOGGING) $(LIBUTILS) $(LIBNETUTILS)
-	$(CC) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(C++) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
 
 $(LIBENGINE) :
 	@make -C ../engine

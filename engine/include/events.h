@@ -1,14 +1,16 @@
 #ifndef _EVENTS_H_
 #define _EVENTS_H_
 
-typedef enum _event_id event_id;
-enum _event_id {
+typedef enum _event_id {
     EVENT_MINIMUM_ID = 0,
     TIMER_SETUP_REQUEST,
     TIMER_SETUP_RESPONSE,
+    TIMER_DELETE_REQUEST,
+    TIMER_DELETE_RESPONSE,
+    TIMER_RESPONSE,     // timer expired, timer activate
 
     EVENT_MAXIMUM_ID
-};
+} event_id;
 
 /*
  * Used by TIMER_SETUP_REQUEST, put into event->data
@@ -21,20 +23,10 @@ struct _timer_param_t {
 
 typedef struct _timer_resp_t timer_resp_t;
 struct _timer_resp_t {
-    unsigned int    seq_no; // activated event No of TIMER_SETUP_REQUEST, Module maybe request multiple timers 
-                            // at one time, it can be used to distingue which timer is activated                            
-
-    int             error;  // < 0, failure reason; 0 - succeed;
+    int     timer_id;  // < 0, failure reason; > 0 - succeed, timer id;
+    bool    activated;
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-const char* str_event(event_id id);
-
-#ifdef __cplusplus
-}
-#endif
+const char* str_event(int32_t id);
 
 #endif

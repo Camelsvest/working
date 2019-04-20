@@ -134,7 +134,7 @@ void _zalloc_uninit()
     free(alloc_stat);
 }
 
-void* _zmalloc(size_t size, char *filename, unsigned int line)
+void* _zmalloc(size_t size, const char *filename, unsigned int line)
 {
     alloc_head_t    *head;
     alloc_tail_t    *tail;

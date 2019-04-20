@@ -1,16 +1,29 @@
 #ifndef _NETIO_MODULE_H_
 #define _NETIO_MODULE_H_
 
-#include "async_module.h"
+#include "bus.h"
 
-typedef struct _netio_module_t netio_module_t;
+class NetIO : public Thread
+{
+public:
+    NetIO();
+    virtual ~NetIO();
 
+protected:
+    virtual void runOnce();
+};
 
-netio_module_t* create_netio_module(uint32_t id, const char *desc);
-int32_t         init_netio_module(netio_module_t *netio, uint32_t id, const char *desc);
-void            destroy_netio_module(netio_module_t *netio);
+class NetIOModule : public BusModule
+{
+public:
+    NetIOModule();
+    virtual ~NetIOModule();
 
-int32_t         start_netio(netio_module_t *netio);
-int32_t         stop_netio(netio_module_t *netio);
+protected:
+    virtual int activateEvent(BusEvent *event);
+
+private:
+    NetIO *m_NetIO;
+};
 
 #endif

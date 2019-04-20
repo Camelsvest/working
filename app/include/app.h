@@ -1,15 +1,21 @@
 #ifndef _APP_H_
 #define _APP_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "engine.h"
 
-int start_app();
-void stop_app();
+class App
+{
+public:
+    App();
+    virtual ~App();
 
-#ifdef __cplusplus
-}
-#endif
+    bool    start();
+    void    stop();
+
+    bool    isRunning();
+
+private:
+    Engine* m_Engine;
+};
 
 #endif

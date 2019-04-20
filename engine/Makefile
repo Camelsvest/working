@@ -3,17 +3,18 @@ LIBLOGGING	:= libs/logging/liblogging.a
 LIBUTILS	:= libs/utils/libutils.a
 LIBNETUTILS	:= libs/netutils/libnetutils.a
 
-CC	:= gcc
-AR	:= ar
+CC		:= gcc
+C++		:= g++
+AR		:= ar
 LIBS	:= 
 LDFLAGS	:= -pthread
 
 DEFINES	:= -DZALLOC_DEBUG
-INCLUDE	:= -I../3rd-parties -I./include -I../libs
-CFLAGS	:= -g -O0 -Wall -pthread $(DEFINES) $(INCLUDE)
+INCLUDE	:= -I../3rd-parties -I./include -I../libs -I../libs/utils
+CPPFLAGS	:= -std=c++11 -g -O0 -Wall -pthread $(DEFINES) $(INCLUDE)
 
-SOURCE	:= $(wildcard ./src/*.c)
-OBJS	:= $(patsubst %.c, %.o, $(SOURCE))
+SOURCE	:= $(wildcard ./src/*.cpp)
+OBJS	:= $(patsubst %.cpp, %.o, $(SOURCE))
 
 .PHONY : all objs clean rebuild
 
@@ -21,8 +22,8 @@ all : $(TARGET)
 
 objs : $(OBJS)
 
-%.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+%.o : %.cpp
+	$(C++) $(CPPFLAGS) -c $< -o $@
 
 rebuild: clean all
 

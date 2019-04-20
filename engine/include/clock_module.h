@@ -1,28 +1,73 @@
 #ifndef _CLOCK_MODULE_H_
 #define _CLOCK_MODULE_H_
 
-#include "async_module.h"
+#include <uv.h>
+#include <map>
 
-enum {
-    CLOCK_ADD_TIMER = 1001,
-    CLOCK_DEL_TIMER,
-    CLOCK_STOP
+#include "bus.h"
+
+class Clock;
+typedef void (*timer_notify_func_t)(int32_t timer_id, void *args);
+typedef struct _add_timer_params_t add_timer_params_t;
+struct _add_timer_params_t
+{
+    int32_t     timer_id;
+    uint32_t    millseconds;
+    bool        repeat;
+    timer_notify_func_t func;
+    void*       func_param;
+    Clock*      instance;
 };
 
-typedef struct _clock_module_t clock_module_t;
+class Clock : public Thread
+{
+public:
+    Clock();
+    virtual ~Clock();
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+    int32_t addTimer(uint32_t millseconds, bool repeat, timer_notify_func_t func, void *func_args);
+    int32_t delTimer(int32_t timerId);
 
-clock_module_t*     create_clock(uint32_t id, const char *desc);
-void                destroy_clock(clock_module_t *clock);
+    int32_t addTimer(add_timer_params_t *param);
 
-int32_t     start_clock(clock_module_t *clock);
-int32_t     stop_clock(clock_module_t *clock);
+protected:
+    virtual bool onThreadStart();
+    virtual void runOnce();
+    virtual void onThreadStop();
 
-#ifdef __cplusplus
-}
-#endif
+    static void processAsyncEvent(uv_async_t *handle);
+    static void onTimer(uv_timer_t *timer);
+
+private:
+    int32_t generateUniqueTimerId();
+
+private:
+    uv_async_t* m_Async;
+    uv_loop_t*  m_Loop;
+
+    static int32_t m_TimerIndex;
+};
+
+class ClockModule : public BusModule
+{
+public:
+    ClockModule();
+    virtual ~ClockModule();
+    
+protected:
+    virtual int activateEvent(BusEvent *event);
+    static void timerNotify(int32_t timer_id, void *args);
+    void timerNotify(int32_t timer_id);
+
+    void onTimer(int32_t timerId);
+
+private:
+    void postTimerSetupResponse(int32_t timer_id, BusModule *dest);
+    void postTimerResponse(int32_t timer_id, BusModule *dest);
+
+private:
+    Clock *m_Clock;
+    std::map<int32_t, BusModule*> m_timerId2BusModule;
+};
 
 #endif
