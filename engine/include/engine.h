@@ -12,7 +12,7 @@ public:
     Engine();
     virtual ~Engine();
 
-    int32_t start();
+    bool    start();
     void    stop();
     bool    isRunning() { return m_Running; }
 

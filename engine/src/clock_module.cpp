@@ -23,7 +23,8 @@ struct _clock_async_event_t {
 int32_t Clock::m_TimerIndex = 0;
 
 Clock::Clock()
-    : m_Async(NULL)
+    : Thread("CLOCK")
+    , m_Async(NULL)
     , m_Loop(NULL)
 {
 
@@ -187,7 +188,12 @@ ClockModule::ClockModule()
 
     m_Clock = new Clock();
     if (m_Clock)
+    {
         succeed = m_Clock->start();
+
+        if (succeed)
+            succeed = (setBusModuleDesc("ClockModule") == 0);
+    }
 
     if (!succeed)
         throw std::runtime_error("Failed to construct object ClockModule");

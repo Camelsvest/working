@@ -54,10 +54,13 @@ public:
 	BusModule();
 	virtual ~BusModule();
 
-	void	setBusModuleId(int32_t id) { m_Id = id; }
-	int32_t getBusModuleId() { return m_Id; }
-	int32_t setBusModuleDesc(const char *desc);
-	int32_t setBus(Bus *bus);
+	void	        setBusModuleId(int32_t id) { m_Id = id; }
+	int32_t         getBusModuleId() { return m_Id; }
+    
+	int32_t         setBusModuleDesc(const char *desc);
+    const char *    getBusModuleDesc()  { return m_Desc; }
+    
+	int32_t         setBus(Bus *bus);
 
 	int postEvent(BusEvent *event);
 	int dispatchEvent(BusEvent *event);

@@ -5,6 +5,7 @@
 #include "logging/logging.h"
 
 NetIO::NetIO()
+    : Thread("NETIO")
 {
 
 }
@@ -27,6 +28,8 @@ NetIOModule::NetIOModule()
     if (m_NetIO)
     {
         succeed = m_NetIO->start();
+        if (succeed)
+            succeed = (setBusModuleDesc("NetIOModule") == 0);
     }
 
     if (!succeed)

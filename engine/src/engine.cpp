@@ -25,7 +25,7 @@ Engine::~Engine()
     logging_uninit();
 }
 
-int32_t Engine::start()
+bool Engine::start()
 {
     int32_t ret = -1;
 
@@ -34,15 +34,18 @@ int32_t Engine::start()
         try
         {
             m_Bus = new Bus;
-            m_ClockModule = new ClockModule;
-            m_NetIOModule = new NetIOModule;
+			if (m_Bus->start())
+			{
+                m_ClockModule = new ClockModule;
+                m_NetIOModule = new NetIOModule;
 
-            ret = m_Bus->attachModule(m_ClockModule);
-            if (ret == 0)
-                ret = m_Bus->attachModule(m_NetIOModule);
+                ret = m_Bus->attachModule(m_ClockModule);
+                if (ret == 0)
+                    ret = m_Bus->attachModule(m_NetIOModule);
 
-            if (ret == 0)
-                m_Running = true;
+                if (ret == 0)
+                    m_Running = true;                
+			}
         }
         catch(const std::exception& e)
         {
@@ -51,7 +54,7 @@ int32_t Engine::start()
         }
     }
 
-    return ret;
+    return (ret == 0);
 }
 
 void Engine::stop()
@@ -59,15 +62,14 @@ void Engine::stop()
     if (m_Running)
     {
         m_Bus->stop();
+        delete m_Bus;
+        m_Bus = NULL;
 
         delete m_ClockModule;
         m_ClockModule = NULL;
 
         delete m_NetIOModule;
         m_NetIOModule = NULL;
-
-        delete m_Bus;
-        m_Bus = NULL;
 
         m_Running = false;
     }

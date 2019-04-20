@@ -217,25 +217,37 @@ int32_t BusModule::unsubscribeEvent(event_id id)
 }
 
 Bus::Bus()
-    : m_ModuleIndex(0)
+    : Thread("BUS")
+    , m_ModuleIndex(0)
 {
-   
+    int index;
+    
+    for (index = 0; index < MODULE_MAX_AMOUNT; index++)
+    {
+        m_ModuleArray[index] = NULL;
+    }
 }
 
 Bus::~Bus()
 {
+    uint32_t index;
     BusEvent *event;
-    std::list<BusEvent *>::iterator itera;
 
-    for (itera = m_EventList.begin(); itera != m_EventList.end(); itera++)
+    while(!m_EventList.empty())
     {
-        event = *itera;
+        event = m_EventList.front();
         event->release();
 
-        itera = m_EventList.erase(itera);
+        m_EventList.pop_front();
     }
 
-    assert(m_EventList.empty());
+    for (index = 0; index < m_ModuleIndex; index++)
+    {
+        if (m_ModuleArray[index])
+        {
+            detachModule(index);
+        }
+    }
 }
 
 int32_t Bus::allocModuleId()
@@ -255,9 +267,7 @@ int32_t Bus::allocModuleId()
 int32_t Bus::attachModule(BusModule *module)
 {
     int32_t moduleId, ret = -1;
-        
-    ENTER_FUNCTION;
-    
+           
     lock();
 
     moduleId = allocModuleId();
@@ -270,13 +280,11 @@ int32_t Bus::attachModule(BusModule *module)
 
         m_ModuleArray[moduleId] = module;
 
+        logging_trace("Attach module %d, %s.\r\n", moduleId, module->getBusModuleDesc());
         ret = 0;
     }
     
     unlock();
-
-    EXIT_FUNCTION;
-
     
     return ret;
 }
@@ -289,8 +297,6 @@ int32_t Bus::detachModule(BusModule *module)
 int32_t Bus::detachModule(uint32_t moduleId)
 {
     BusModule *module;
-
-    ENTER_FUNCTION;
     
     lock();
     if (moduleId >= 0 && moduleId < m_ModuleIndex) 
@@ -303,6 +309,9 @@ int32_t Bus::detachModule(uint32_t moduleId)
             module->lock();
             module->setBus(NULL);
             module->unlock();
+
+            logging_trace("Detach module %d, %s.\r\n", moduleId, module->getBusModuleDesc());
+
         }
         else
         {
@@ -315,8 +324,6 @@ int32_t Bus::detachModule(uint32_t moduleId)
         // ... To do, illegal paramter
     }    
     unlock();
-
-    EXIT_FUNCTION;
 
     return 0;    
 }
