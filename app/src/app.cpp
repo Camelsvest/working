@@ -3,6 +3,10 @@
 #include "utils/zalloc.h"
 #include "logging/logging.h"
 
+#if defined(ZALLOC_DEBUG) || defined(DEBUG) || defined(_DEBUG)
+#define new zdebug_new
+#endif
+
 App::App()
 	: m_Engine(NULL)
 {

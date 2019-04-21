@@ -2,33 +2,32 @@
 #include "engine.h"
 #include "utils/zalloc.h"
 
+#if defined(ZALLOC_DEBUG) || defined(DEBUG) || defined(_DEBUG)
+#define new zdebug_new
+#endif
+
+
 Engine::Engine()
-    : m_Bus(NULL)
+    : Object("Engine")
+    , m_Bus(NULL)
     , m_ClockModule(NULL)
     , m_NetIOModule(NULL)
     , m_Running(false)
 {
-    int ret = -1;
 
-    ret = logging_init(NULL);
-    if (ret != 0)
-        throw std::runtime_error("Failed to init logging.");
-
-    ret = zalloc_init();
-    if (ret != 0)
-        throw std::runtime_error("Failed to init zalloc.");
 }
 
 Engine::~Engine()
 {
-    zalloc_uninit();
-    logging_uninit();
+
 }
 
 bool Engine::start()
 {
     int32_t ret = -1;
 
+    ENTER_FUNCTION;
+    
     if (!m_Running)
     {
         try
@@ -44,7 +43,7 @@ bool Engine::start()
                     ret = m_Bus->attachModule(m_NetIOModule);
 
                 if (ret == 0)
-                    m_Running = true;                
+                    m_Running = true;
 			}
         }
         catch(const std::exception& e)
@@ -54,11 +53,15 @@ bool Engine::start()
         }
     }
 
+    EXIT_FUNCTION;
+    
     return (ret == 0);
 }
 
 void Engine::stop()
 {
+    ENTER_FUNCTION;
+    
     if (m_Running)
     {
         m_Bus->stop();
@@ -73,4 +76,6 @@ void Engine::stop()
 
         m_Running = false;
     }
+
+    EXIT_FUNCTION;
 }

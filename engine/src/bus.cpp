@@ -3,7 +3,12 @@
 #include <string.h>
 #include "bus.h"
 #include "utils/zalloc.h"
-#include "logging/logging.h"
+#include "def.h"
+
+#if defined(ZALLOC_DEBUG) || defined(DEBUG) || defined(_DEBUG)
+#define new zdebug_new
+#endif
+
 
 pthread_mutex_t BusEvent::m_GlobalMutex = PTHREAD_MUTEX_INITIALIZER;
 uint32_t BusEvent::m_GlobalUniqueSeqNo = 0;
@@ -11,18 +16,15 @@ uint32_t BusEvent::m_GlobalUniqueSeqNo = 0;
 BusEvent::BusEvent()
     : m_Id(-1)
     , m_Data(NULL)
-    , m_Desc(NULL)
     , m_RefCount(0)
     , m_SeqNo(0)
     , m_From(NULL)
-    , m_Dest(NULL)
+    , m_RespSeqNo(0)
 {
 }
 
 BusEvent::~BusEvent()
 {
-    if (m_Desc)
-        zfree(m_Desc);    
 }
 
 uint32_t BusEvent::generateSeqNo()
@@ -38,33 +40,18 @@ uint32_t BusEvent::generateSeqNo()
 
 int32_t BusEvent::init(BusModule *from, int32_t id, const char *desc, void *data)
 {
-    size_t length;    
     int32_t ret = -1;
     
     assert(from != NULL);
     m_SeqNo = generateSeqNo();
     m_From = from;
-    m_Dest = NULL;
     
     m_RefCount = 0;		
     m_Id = id;
     m_Data = data;
             
     if (desc != NULL)
-    {
-        length = strlen(desc);
-        if (length > 0)
-        {
-            m_Desc = (char *)zmalloc(length + 1);
-            if (m_Desc != NULL)
-            {
-                strcpy(m_Desc, desc);
-                ret = 0;                
-            }
-        }
-    }
-    else
-        m_Desc = NULL;
+        ret = setObjectName(desc) ? 0 : -1;
 
     return ret;
 
@@ -96,38 +83,17 @@ int32_t BusEvent::release()
 
 BusModule::BusModule()
     : m_Id(-1)
-    , m_Desc(NULL)
 {
 
 }
 
 BusModule::~BusModule()
 {
-    if (m_Desc)
-        zfree(m_Desc);
 }
 
-int32_t BusModule::setBusModuleDesc(const char *desc)
+bool BusModule::setBusModuleDesc(const char *desc)
 {
-    size_t length;
-    int32_t ret = -1;
-
-    if (desc != NULL)
-    {
-        length = strlen(desc);
-        if (length > 0)
-        {
-            if (m_Desc != NULL)
-                zfree(m_Desc);
-
-            m_Desc = (char *)zmalloc(length + 1);
-            strcpy(m_Desc, desc);
-
-            ret = 0;
-        }       
-    }
-
-    return ret;        
+    return setObjectName(desc);
 }
 
 int32_t BusModule::setBus(Bus *bus)
@@ -143,16 +109,37 @@ int32_t BusModule::setBus(Bus *bus)
     return ret;
 }
 
-int BusModule::postEvent(BusEvent *event)
+int32_t BusModule::postEvent(BusEvent *event)
 {
     int ret = -1;
 
+    ENTER_CLASS_FUNCTION("BusModule");
+    
     if (m_Bus)
     {
         m_Bus->dispatchEvent(event);
         ret = 0;
     }
 
+    EXIT_CLASS_FUNCTION("BusModule");
+    
+    return ret;    
+}
+
+int32_t BusModule::postEventSychronous(BusEvent *event)
+{
+    int ret = -1;
+
+    ENTER_CLASS_FUNCTION("BusModule");
+    
+    if (m_Bus)
+    {
+        m_Bus->dispatchEventSynchronous(event);
+        ret = 0;
+    }
+
+    EXIT_CLASS_FUNCTION("BusModule");
+    
     return ret;
 }
 
@@ -216,6 +203,16 @@ int32_t BusModule::unsubscribeEvent(event_id id)
     return 0;
 }
 
+void BusModule::onAttach()
+{
+    // empty
+}
+
+void BusModule::onDetach()
+{
+    // empty    
+}
+
 Bus::Bus()
     : Thread("BUS")
     , m_ModuleIndex(0)
@@ -267,7 +264,9 @@ int32_t Bus::allocModuleId()
 int32_t Bus::attachModule(BusModule *module)
 {
     int32_t moduleId, ret = -1;
-           
+
+    ENTER_CLASS_FUNCTION("Bus");
+    
     lock();
 
     moduleId = allocModuleId();
@@ -279,12 +278,15 @@ int32_t Bus::attachModule(BusModule *module)
         module->unlock();
 
         m_ModuleArray[moduleId] = module;
-
+        
         logging_trace("Attach module %d, %s.\r\n", moduleId, module->getBusModuleDesc());
         ret = 0;
-    }
-    
+    }    
     unlock();
+
+    module->onAttach();
+
+    EXIT_CLASS_FUNCTION("Bus");
     
     return ret;
 }
@@ -297,6 +299,8 @@ int32_t Bus::detachModule(BusModule *module)
 int32_t Bus::detachModule(uint32_t moduleId)
 {
     BusModule *module;
+
+    ENTER_CLASS_FUNCTION("Bus");
     
     lock();
     if (moduleId >= 0 && moduleId < m_ModuleIndex) 
@@ -304,12 +308,14 @@ int32_t Bus::detachModule(uint32_t moduleId)
         module = m_ModuleArray[moduleId];
         if (module != NULL)
         {
-            m_ModuleArray[moduleId] = NULL;
+            module->onDetach();            
 
+            m_ModuleArray[moduleId] = NULL;
+            
             module->lock();
             module->setBus(NULL);
             module->unlock();
-
+            
             logging_trace("Detach module %d, %s.\r\n", moduleId, module->getBusModuleDesc());
 
         }
@@ -325,31 +331,45 @@ int32_t Bus::detachModule(uint32_t moduleId)
     }    
     unlock();
 
+    EXIT_CLASS_FUNCTION("Bus");
+    
     return 0;    
 }
 
 int32_t Bus::dispatchEvent(BusEvent *event)
 {
-    return dispatchEventToModule(NULL, event);
+    int ret;
+
+    ENTER_CLASS_FUNCTION("Bus");
+    
+    lock();
+    m_EventList.push_back(event);
+    event->addRef();
+    unlock();
+
+    logging_trace("Bus dispatch event: %u.%s.\r\n", event->getSeqNo(), event->getDesc());
+    
+    ret = wakeUp();
+
+    EXIT_CLASS_FUNCTION("Bus");
+    
+    return ret;
 }
 
-int32_t Bus::dispatchEventToModule(BusModule *module, BusEvent *event)
+int32_t Bus::dispatchEventSynchronous(BusEvent * event)
 {
-    int32_t ret = -1;
+    int ret;
 
-    if (module != NULL)
-        ret = module->dispatchEvent(event);
-    else
-    {
-        lock();
-        m_EventList.push_back(event);
-        event->addRef();        
-        unlock();
+    ENTER_CLASS_FUNCTION("Bus");
 
-        pthread_cond_signal(m_Cond);
+    m_SyncEventList.push_back(event);
+    event->addRef();
 
-        ret = 0;
-    }    
+    logging_trace("Bus dispatch synchronous event: %u.%s.\r\n", event->getSeqNo(), event->getDesc());
+
+    ret = wakeUp();
+
+    EXIT_CLASS_FUNCTION("Bus");
 
     return ret;
 }
@@ -359,29 +379,24 @@ void Bus::runOnce()
     uint32_t index;
     BusEvent *event;
     BusModule *module;
-    std::list<BusEvent *>::iterator itera;
 
-    for  (itera = m_EventList.begin(); itera != m_EventList.end(); itera++)
+    ENTER_CLASS_FUNCTION("Bus");
+
+    m_EventList.merge(m_SyncEventList);
+    m_SyncEventList.clear();
+    
+    while (!m_EventList.empty())
     {
-        event = *itera;
-        if (event->m_Dest == NULL) 
+        event = m_EventList.front();
+        for (index = 0; index < m_ModuleIndex; index++)
         {
-            for (index = 0; index < m_ModuleIndex; index++)
-            {
-                module = m_ModuleArray[index];
-                assert(module != NULL);
-                module->dispatchEvent(event);
-            }
-        }
-        else
-        {
-            module = event->m_Dest;
+            module = m_ModuleArray[index];
+            assert(module != NULL);
             module->dispatchEvent(event);
         }
-        
         event->release();
-        itera = m_EventList.erase(itera);
+        m_EventList.pop_front();
     }
-    
-    assert(m_EventList.empty());
+
+    EXIT_CLASS_FUNCTION("Bus");
 }

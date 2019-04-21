@@ -7,6 +7,11 @@ int main(int argc, char *argv[])
     App *app;
     bool running = false;
 
+    int ret = -1;
+
+    ret = logging_init(NULL);
+    ret = zalloc_init();
+
     try
     {
         app = new App();
@@ -24,6 +29,9 @@ int main(int argc, char *argv[])
         app->stop();
 
     delete app;
+
+    zalloc_uninit();
+    logging_uninit();
 
     fprintf(stdout, "\r\n");
     

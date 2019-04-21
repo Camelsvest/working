@@ -16,7 +16,6 @@ struct _add_timer_params_t
     bool        repeat;
     timer_notify_func_t func;
     void*       func_param;
-    Clock*      instance;
 };
 
 class Clock : public Thread
@@ -25,13 +24,15 @@ public:
     Clock();
     virtual ~Clock();
 
+    bool    start();
+    bool    stop();
+    
     int32_t addTimer(uint32_t millseconds, bool repeat, timer_notify_func_t func, void *func_args);
     int32_t delTimer(int32_t timerId);
 
     int32_t addTimer(add_timer_params_t *param);
 
 protected:
-    virtual bool onThreadStart();
     virtual void runOnce();
     virtual void onThreadStop();
 
@@ -42,8 +43,9 @@ private:
     int32_t generateUniqueTimerId();
 
 private:
-    uv_async_t* m_Async;
     uv_loop_t*  m_Loop;
+
+    std::list<uv_timer_t *> m_PendingTimerList;
 
     static int32_t m_TimerIndex;
 };
@@ -62,7 +64,7 @@ protected:
     void onTimer(int32_t timerId);
 
 private:
-    void postTimerSetupResponse(int32_t timer_id, BusModule *dest);
+    void postTimerSetupResponse(int32_t timer_id, BusModule *dest, uint32_t resp_seq_no);
     void postTimerResponse(int32_t timer_id, BusModule *dest);
 
 private:

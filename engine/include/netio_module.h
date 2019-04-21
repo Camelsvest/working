@@ -19,6 +19,8 @@ public:
     NetIOModule();
     virtual ~NetIOModule();
 
+    virtual void onAttach();
+
 protected:
     virtual int activateEvent(BusEvent *event);
 

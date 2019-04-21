@@ -11,7 +11,7 @@ LIBS	:=
 LDFLAGS	:= -pthread 
 LIBS	:= -L../engine -lengine -L../libs/logging -llogging -L../libs/utils -lutils -L../libs/netutils -lnetutils -luv
 DEFINES	:= -DZALLOC_DEBUG
-INCLUDE	:= -I../3rd-parties -Iinclude -I../libs -I../engine/include
+INCLUDE	:= -I../3rd-parties -Iinclude -I../libs -I../libs/utils -I../engine/include
 CPPFLAGS	:= -std=c++11 -g -O0 -Wall -pthread $(DEFINES) $(INCLUDE)
 
 SOURCE	:= $(wildcard src/*.cpp)

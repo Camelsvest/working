@@ -2,17 +2,17 @@
 #include <sys/prctl.h>
 #include "zalloc.h"
 #include "thread.h"
-#include "logging/logging.h"
+#include "def.h"
+
+#if defined(ZALLOC_DEBUG) || defined(DEBUG) || defined(_DEBUG)
+#define new zdebug_new
+#endif
 
 Thread::Thread(const char *thread_name)
-    : m_ThreadId(0)
+    : Object(thread_name)
+    , m_ThreadId(0)
     , m_ThreadQuit(true)
-{
-    if (thread_name)
-        m_ThreadName = thread_name;
-    else
-        m_ThreadName = "UNKNOWN_THREAD";
-    
+{   
     m_Cond = (pthread_cond_t *)zmalloc(sizeof(pthread_cond_t));
     if (m_Cond != NULL)
     {
@@ -37,12 +37,16 @@ bool Thread::start()
 {
     int ret = -1;
 
+    ENTER_FUNCTION;
+
     if (m_ThreadId != 0)
         return false;
 
     ret = pthread_create(&m_ThreadId, NULL, threadFunc, this);
     if (ret == 0)
         pthread_cond_signal(m_Cond);    // trigger once
+
+    EXIT_FUNCTION;
     
     return (ret == 0);
 }
@@ -52,14 +56,20 @@ bool Thread::stop()
     void *result;    
     int ret = -1;
 
+    ENTER_FUNCTION;
+        
     lock();
     m_ThreadQuit = true;
-    pthread_cond_signal(m_Cond);
     unlock();
+    ret = pthread_cond_signal(m_Cond);
+    if (ret == 0);
+    {
+        ret = pthread_join(m_ThreadId, &result);
+        if (ret == 0) // succeed
+            m_ThreadId = 0;
+    }
 
-    ret = pthread_join(m_ThreadId, &result);
-    if (ret == 0) // succeed
-        m_ThreadId = 0;
+    EXIT_FUNCTION;
     
     return (ret == 0);
 }
@@ -67,10 +77,15 @@ bool Thread::stop()
 bool Thread::isRunning()
 {
     bool running;
+
+    ENTER_FUNCTION;
+    
     lock();
     running = !m_ThreadQuit;
     unlock();
 
+    EXIT_FUNCTION;
+    
     return running;
 }
 
@@ -98,16 +113,16 @@ void* Thread::threadFunc(void *args)
 
 bool Thread::onThreadStart()
 {
-    prctl(PR_SET_NAME, m_ThreadName);    
+    prctl(PR_SET_NAME, getObjectName());    
     m_ThreadQuit = false;
 
-    logging_verbos("0x%X Thread %s started.\r\n", m_ThreadId, m_ThreadName.c_str());
+    logging_debug("0x%X Thread %s started.\r\n", m_ThreadId, getObjectName());
     return true;
 }
 
 void Thread::onThreadStop()
 {
-    logging_verbos("0x%X Thread %s stopped.\r\n", m_ThreadId, m_ThreadName.c_str());    
+    logging_debug("0x%X Thread %s stopped.\r\n", m_ThreadId, getObjectName());    
 }
 
 bool Thread::wakeUp()

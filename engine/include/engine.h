@@ -6,7 +6,7 @@
 #include "clock_module.h"
 #include "netio_module.h"
 
-class Engine
+class Engine : public Object
 {
 public:
     Engine();

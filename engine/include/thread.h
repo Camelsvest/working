@@ -23,7 +23,6 @@ protected:
     virtual void onThreadStop(void); 
 
 protected:
-    std::string     m_ThreadName;
     pthread_t       m_ThreadId;
     pthread_cond_t  *m_Cond;
     bool            m_ThreadQuit;
