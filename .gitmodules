@@ -1,3 +1,4 @@
 [submodule "libs/logging"]
 	path = libs/logging
-	url = https://github.com/Camelsvest/logging
+#	url = https://github.com/Camelsvest/logging
+	url = git@github.com:Camelsvest/logging.git
